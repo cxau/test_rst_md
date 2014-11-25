@@ -2,7 +2,7 @@
 
 在前一章中，你可能已经注意到我们在例子视图中返回文本的方式有点特别。也就是说，HTML 被直接硬编码在 Python 代码之中。
 
-```python
+```Python
 def current_datetime(request):
     now = datetime.datetime.now()
     html = "<html><body>It is now %s.</body></html>" % now
@@ -86,7 +86,7 @@ ship on {{ ship_date|date:"F j, Y" }}.</p>
 
 在代码中，它长成这个样子：
 
-```python
+```Python
 >>> from django import template
 >>> t = template.Template('My name is {{ name }}.')
 >>> c = template.Context({'name': 'Adrian'})
@@ -117,7 +117,7 @@ My name is Fred.
 
 让我们来了解一些模板系统的基本知识：
 
-```python
+```Python
 >>> from django.template import Template
 >>> t = Template('My name is {{ name }}.')
 >>> print t
@@ -125,7 +125,7 @@ My name is Fred.
 
 如果你还在交互解释器中，你会看到类似下面的东西：
 
-```python
+```Python
 <django.template.Template object at 0xb7d5f24c>
 ```
 
@@ -133,7 +133,7 @@ My name is Fred.
 
 当你创建一个`Template`对象，模板系统在内部编译这个模板到内部格式，并做优化，做好 渲染 *rendering* 的准备。如果你的模板语法有错误，那么在调用`Template()`时就会抛出`TemplateSyntaxError`异常：
 
-```python
+```Python
 >>> from django.template import Template
 >>> t = Template('{% notatag %}')
 Traceback (most recent call last):
@@ -159,7 +159,7 @@ django.template.TemplateSyntaxError: Invalid block tag: 'notatag'
 
 上下文 context 在Django里表现为`Context`类，在`django.template`模块里。 它的构造函数带有一个可选的参数：一个字典映射变量和它们的值。 调用`Template`对象的`render()`方法并传递context来填充模板：
 
-```python
+```Python
 >>> from django.template import Context, Template
 >>> t = Template('My name is {{ name }}.')
 >>> c = Context({'name': 'Stephane'})
@@ -179,7 +179,7 @@ Python的字典数据类型就是关键字和它们值的一个映射。`Context
 
 下面是编写模板并渲染的例子：
 
-```python
+```Python
 >>> from django.template import Template, Context
 >>> raw_template = """<p>Dear {{ person_name }},</p>
 ...
@@ -225,7 +225,7 @@ inevitably stop working.</p>\n\n\n<p>Sincerely,<br />Outdoor Equipment
 
 一旦有了`Template`对象，你就可以通过它渲染多个context，例如：
 
-```python
+```Python
 >>> from django.template import Template, Context
 >>> t = Template('Hello, {{ name }}')
 >>> print t.render(Context({'name': 'John'}))
@@ -238,7 +238,7 @@ Hello, Pat
 
 无论何时我们都可以像这样使用同一模板源渲染多个context，只进行**一次**`Template`对象的创建，然后多次调用`render()`方法渲染，这样会更高效：
 
-```python
+```Python
 # Bad
 for name in ('John', 'Julie', 'Pat'):
     t = Template('Hello, {{ name }}')
@@ -260,7 +260,7 @@ Django的模板解析相当快捷。大部分的解析工作都是在后台通�
 
 最好是用几个例子来说明一下。比如，假设你要向模板传递一个Python字典。要通过**字典键**访问该字典的值，可使用一个句点：
 
-```python
+```Python
 >>> from django.template import Template, Context
 >>> person = {'name': 'Sally', 'age': '43'}
 >>> t = Template('{{ person.name }} is {{ person.age }} years old.')
@@ -271,7 +271,7 @@ u'Sally is 43 years old.'
 
 同样，也可以通过句点来访问对象的属性。比方说， Python的`datetime.date`对象有`year`、`month`和`day`几个属性，你同样可以在模板中使用句点来访问这些属性*attributes*：
 
-```python
+```Python
 >>> from django.template import Template, Context
 >>> import datetime
 >>> d = datetime.date(1993, 5, 2)
@@ -289,7 +289,7 @@ u'The month is 5 and the year is 1993.'
 
 这个例子使用了一个自定义类*custom class*，演示了通过实例变量加点(dot)来访问它的属性，这个方法适用于任意的对象：
 
-```python
+```Python
 >>> from django.template import Template, Context
 >>> class Person(object):
 ...     def __init__(self, first_name, last_name):
@@ -302,7 +302,7 @@ u'Hello, John Smith.'
 
 点语法也可以用来引用对象的**方法***methods*。 例如，每个Python字符串都有`upper()`和`isdigit()`方法，你在模板中可以使用同样的句点语法来调用它们：
 
-```python
+```Python
 >>> from django.template import Template, Context
 >>> t = Template('{{ var }} -- {{ var.upper }} -- {{ var.isdigit }}')
 >>> t.render(Context({'var': 'hello'}))
@@ -315,7 +315,7 @@ u'123 -- 123 -- True'
 
 最后，句点也可用于访问列表索引*list indices*，例如：
 
-```python
+```Python
 >>> from django.template import Template, Context
 >>> t = Template('Item 2 is {{ items.2 }}.')
 >>> c = Context({'items': ['apples', 'bananas', 'carrots']})
@@ -342,7 +342,7 @@ Python列表类型
 
 句点查找可以多级深度嵌套。例如在下面这个例子中 `{{person.name.upper}}`会转换成字典类型查找（`person['name']`)然后是方法调用（`upper()`):
 
-```python
+```Python
 >>> from django.template import Template, Context
 >>> person = {'name': 'Sally', 'age': '43'}
 >>> t = Template('{{ person.name.upper }} is {{ person.age }} years old.')
@@ -357,7 +357,7 @@ u'SALLY is 43 years old.'
 
 - 在方法查找过程中，如果某方法抛出一个异常，除非该异常有一个`silent_variable_failure`属性并且它的值为`True`，否则的话它将被传播*propagated*。如果异常确实有`silent_variable_failure`属性，那么模板里的指定变量会被置为空字符串*empty string*，比如:
 
-    ```python
+    ```Python
     >>> t = Template("My name is {{ person.first_name }}.")
     >>> class PersonClass3:
     ...     def first_name(self):
@@ -386,7 +386,7 @@ u'SALLY is 43 years old.'
 
     要防止这样的事情发生，必须设置该方法的 `alters_data` 函数属性：
 
-    ```python
+    ```Python
     def delete(self):
         # Delete the account
     delete.alters_data = True
@@ -398,7 +398,7 @@ u'SALLY is 43 years old.'
 
 默认情况下，如果一个变量不存在，模板系统会把它展示为**空字符串**，不做任何事情来表示失败。 例如：
 
-```python
+```Python
 >>> from django.template import Template, Context
 >>> t = Template('Your name is {{ name }}.')
 >>> t.render(Context())
@@ -417,7 +417,7 @@ u'Your name is .'
 
 多数时间，你可以通过传递一个完全填充*full populated*的字典给 `Context()` 来初始化 `Context`对象。 但是初始化以后，你也可以使用标准的Python字典句法*syntax*向`Context`对象添加或者删除条目：
 
-```python
+```Python
 >>> from django.template import Context
 >>> c = Context({"foo": "bar"})
 >>> c['foo']
@@ -442,7 +442,7 @@ KeyError: 'foo'
 
 `{% if %}`标签检查一个变量，如果这个变量为真（即，变量存在，非空，不是布尔值假），系统会显示在`{% if %}`和`{% endif %}`之间的任何内容，例如：
 
-```django
+```HTML+Django
 {% if today_is_weekend %}
     <p>Welcome to the weekend!</p>
 {% endif %}
@@ -450,7 +450,7 @@ KeyError: 'foo'
 
 `{% else %}`标签是可选的：
 
-```django
+```HTML+Django
 {% if today_is_weekend %}
     <p>Welcome to the weekend!</p>
 {% else %}
@@ -477,7 +477,7 @@ Python的“真值”
 
 `{% if %}`标签接受`and`，`or`或者`not`关键字来对多个变量做判断，或者对变量取反，例如：
 
-```django
+```HTML+Django
 {% if athlete_list and coach_list %}
     Both athletes and coaches are available.
 {% endif %}
@@ -501,13 +501,13 @@ Python的“真值”
 
 {% if %}标签不允许在同一个标签中同时使用`and` 和`or`，因为逻辑上可能模糊的。例如，下面的代码是非法的：
 
-```django
+```HTML+Django
 {% if athlete_list and coach_list or cheerleader_list %}
 ```
 
 系统不支持用圆括号来处理比较操作的顺序。如果你确实需要用到圆括号来组合表达你的逻辑式，考虑将它移到模板之外处理，然后以模板变量的形式传入结果吧。或者，仅仅用嵌套的`{% if %}`标签替换吧，就像这样：
 
-```django
+```HTML+Django
 {% if athlete_list %}
     {% if coach_list or cheerleader_list %}
         We have athletes, and either coaches or cheerleaders!
@@ -517,13 +517,13 @@ Python的“真值”
 
 多次使用同一个逻辑操作符是没有问题的，但是我们不能把不同的操作符组合起来。例如，这是合法的：
 
-```django
+```HTML+Django
 {% if athlete_list or coach_list or parent_list or teacher_list %}
 ```
 
 Django模板没有`{% elif %}`标签，请使用嵌套的`{% if %}`标签来达成同样的效果：
 
-```django
+```HTML+Django
 {% if athlete_list %}
     <p>Here are the athletes: {{ athlete_list }}.</p>
 {% else %}
@@ -542,7 +542,7 @@ Django模板没有`{% elif %}`标签，请使用嵌套的`{% if %}`标签来达�
 
 例如，给定一个运动员列表`athlete_list`变量，我们可以使用下面的代码来显示这个列表：
 
-```django
+```HTML+Django
 <ul>
 {% for athlete in athlete_list %}
     <li>{{ athlete.name }}</li>
@@ -552,7 +552,7 @@ Django模板没有`{% elif %}`标签，请使用嵌套的`{% if %}`标签来达�
 
 在标签末尾添加一个`reversed`参数，使得该列表被反向迭代：
 
-```django
+```HTML+Django
 {% for athlete in athlete_list reversed %}
 ...
 {% endfor %}
@@ -560,7 +560,7 @@ Django模板没有`{% elif %}`标签，请使用嵌套的`{% if %}`标签来达�
 
 可以嵌套使用`{% for %}`标签：【重要】
 
-```django
+```HTML+Django
 {% for athlete in athlete_list %}
     <h1>{{ athlete.name }}</h1>
     <ul>
@@ -573,7 +573,7 @@ Django模板没有`{% elif %}`标签，请使用嵌套的`{% if %}`标签来达�
 
 在执行循环之前先检测列表的大小是一个通常的做法，当**列表为空**时输出一些特别的提示：【重要】
 
-```django
+```HTML+Django
 {% if athlete_list %}
     {% for athlete in athlete_list %}
         <p>{{ athlete.name }}</p>
@@ -585,7 +585,7 @@ Django模板没有`{% elif %}`标签，请使用嵌套的`{% if %}`标签来达�
 
 因为这种做法十分常见，所以`for`标签支持一个可选的`{% empty %}`分句，通过它我们可以定义当列表为空时的输出内容。下面的例子与之前那个等价：
 
-```django
+```HTML+Django
 {% for athlete in athlete_list %}
     <p>{{ athlete.name }}</p>
 {% empty %}
@@ -599,7 +599,7 @@ Django模板**不支持**退出循环操作。如果我们想退出循环，可�
 
 - `forloop.counter`总是一个表示当前循环的执行次数的整数计数器。这个计数器是从1开始的，所以在第一次循环时`forloop.counter`将会被设置为`1`。请看例子：
 
-    ```django
+    ```HTML+Django
     {% for item in todo_list %}
         <p>{{ forloop.counter }}: {{ item }}</p>
     {% endfor %}
@@ -613,7 +613,7 @@ Django模板**不支持**退出循环操作。如果我们想退出循环，可�
 
 - `forloop.first`是一个布尔值，如果该迭代是第一次执行，那么它被置为`True`。在下面的特殊案例中这个变量是很有用的：【把第一个设置成active？】
 
-    ```django
+    ```HTML+Django
     {% for object in objects %}
         {% if forloop.first %}<li class="first">{% else %}<li>{% endif %}
         {{ object }}
@@ -623,26 +623,26 @@ Django模板**不支持**退出循环操作。如果我们想退出循环，可�
 
 - `forloop.last`是一个布尔值，在最后一次执行循环时被置为True。一个常见用法是在一系列的链接之间放置管道符（|）：【if嵌套在for内部判断这个变量的属性】
 
-    ```django
+    ```HTML+Django
     {% for link in links %}{{ link }}{% if not forloop.last %} | {% endif %}{% endfor %}
     ```
 
     上面的模板可能会产生如下的结果：
 
-    ```django
+    ```HTML+Django
     Link1 | Link2 | Link3 | Link4
     ```
 
     另一个常见的用途是为列表中的每个单词的加上逗号：
 
-    ```django
+    ```HTML+Django
     Favorite places:
     {% for p in places %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}
     ```
 
 - `forloop.parentloop`是一个指向当前循环的上一级循环的`forloop`对象的引用（在嵌套循环的情况下）。 例子在此：
 
-    ```django
+    ```HTML+Django
     {% for country in countries %}
         <table>
         {% for city in country.city_list %}
