@@ -1,6 +1,6 @@
 # 第4章 模板 #
 
-在前一章中，你可能已经注意到我们在例子视图中返回文本的方式有点特别。 也就是说，HTML 被直接硬编码在 Python 代码之中。
+在前一章中，你可能已经注意到我们在例子视图中返回文本的方式有点特别。也就是说，HTML 被直接硬编码在 Python 代码之中。
 
 ```python
 def current_datetime(request):
@@ -9,7 +9,7 @@ def current_datetime(request):
     return HttpResponse(html)
 ```
 
-尽管这种技术便于解释视图是如何工作的，但直接将HTML硬编码到你的视图里却并不是一个好主意。 让我们来看一下为什么：
+尽管这种技术便于解释视图是如何工作的，但直接将HTML硬编码到你的视图里却并不是一个好主意。让我们来看一下为什么：
 
 - 对页面设计进行的任何改变都必须对 Python 代码进行相应的修改。站点设计的修改往往比底层 Python 代码的修改要频繁得多，因此如果可以在不进行 Python 代码修改的情况下变更设计，那将会方便得多。
 
@@ -59,16 +59,16 @@ ship on {{ ship_date|date:"F j, Y" }}.</p>
 </html>
 ```
 
-该模板是一段添加了些许变量和模板标签的基础  HTML。让我们逐步分析一下：
+该模板是一段添加了些许变量和模板标签的基础HTML。让我们逐步分析一下：
 
-- 用两个大括号括起来的文字（如 
+- 用两个大括号括起来的文字（如
 `{{ person_name }}` ）称为 变量 *variable*。这意味着“在此处插入指定变量的值。”（如何指定变量的值呢？稍后就会说明。）
 
 - 被大括号和百分号包围的文本（如 `{% if ordered_warranty %}` ）是 模板标签 *template tag*。标签 *tag* 定义比较明确，即：标签通知模板系统去做某些事情。
 
-       这个例子中的模板包含一个 `for` 标签（ `{% for item in item_list %}` ）和一个 `if` 标签（`{% if ordered_warranty %}` ）
-	
-       `for` 标签类似 Python 的 for 语句，可让你循环访问序列里的每一个项目。if 标签，正如你所料，是用来执行逻辑判断的。在这里，tag 标签检查 ordered_warranty 值是否为 `True`。如果是，模板系统将显示 `{% if ordered_warranty %}` 和 `{% else %}` 之间的内容；否则将显示 `{% else %}` 和 `{% endif %}` 之间的内容。注意 `{% else %}` 是可选的。
+    这个例子中的模板包含一个 `for` 标签（ `{% for item in item_list %}` ）和一个 `if` 标签（`{% if ordered_warranty %}` ）
+
+    `for` 标签类似 Python 的 for 语句，可让你循环访问序列里的每一个项目。if 标签，正如你所料，是用来执行逻辑判断的。在这里，tag 标签检查 ordered_warranty 值是否为 `True`。如果是，模板系统将显示 `{% if ordered_warranty %}` 和 `{% else %}` 之间的内容；否则将显示 `{% else %}` 和 `{% endif %}` 之间的内容。注意 `{% else %}` 是可选的。
 
 - 最后，这个模板的第二段中有一个关于 过滤器 *filter* 的例子，它是一种最便捷的转换变量输出格式的方式。 如这个例子中的 `{{ ship_date|date:"F j, Y" }}`，我们将变量 `ship_date` 传递给 `date` 过滤器，同时指定参数 `”F j,Y”`。过滤器 `date` 根据参数进行格式输出。 过滤器是用管道符(`|`)来调用的，具体可以参见 Unix 管道符。
 
@@ -86,14 +86,16 @@ ship on {{ ship_date|date:"F j, Y" }}.</p>
 
 在代码中，它长成这个样子：
 
-	>>> from django import template
-	>>> t = template.Template('My name is {{ name }}.')
-	>>> c = template.Context({'name': 'Adrian'})
-	>>> print t.render(c)
-	My name is Adrian.
-	>>> c = template.Context({'name': 'Fred'})
-	>>> print t.render(c)
-	My name is Fred.
+```python
+>>> from django import template
+>>> t = template.Template('My name is {{ name }}.')
+>>> c = template.Context({'name': 'Adrian'})
+>>> print t.render(c)
+My name is Adrian.
+>>> c = template.Context({'name': 'Fred'})
+>>> print t.render(c)
+My name is Fred.
+```
 
 下文将详细介绍每步的具体操作。
 
@@ -115,24 +117,30 @@ ship on {{ ship_date|date:"F j, Y" }}.</p>
 
 让我们来了解一些模板系统的基本知识：
 
-	>>> from django.template import Template
-	>>> t = Template('My name is {{ name }}.')
-	>>> print t
+```python
+>>> from django.template import Template
+>>> t = Template('My name is {{ name }}.')
+>>> print t
+```
 
 如果你还在交互解释器中，你会看到类似下面的东西：
 
-	<django.template.Template object at 0xb7d5f24c>
+```python
+<django.template.Template object at 0xb7d5f24c>
+```
 
-那个`0xb7d5f24c`每次都会不一样，这没什么关系；这只是Python运行时 Template对象的ID。
+那个`0xb7d5f24c`每次都会不一样，这没什么关系；这只是Python运行时Template对象的ID。
 
 当你创建一个`Template`对象，模板系统在内部编译这个模板到内部格式，并做优化，做好 渲染 *rendering* 的准备。如果你的模板语法有错误，那么在调用`Template()`时就会抛出`TemplateSyntaxError`异常：
 
-	>>> from django.template import Template
-	>>> t = Template('{% notatag %}')
-	Traceback (most recent call last):
-	  File "<stdin>", line 1, in ?
-	  ...
-	django.template.TemplateSyntaxError: Invalid block tag: 'notatag'
+```python
+>>> from django.template import Template
+>>> t = Template('{% notatag %}')
+Traceback (most recent call last):
+  File "<stdin>", line 1, in ?
+  ...
+django.template.TemplateSyntaxError: Invalid block tag: 'notatag'
+```
 
 这里，“块标签” *block tag* 指向的是`{% notatag %}`，“块标签”与“模板标签”是同义的。
 
@@ -147,15 +155,17 @@ ship on {{ ship_date|date:"F j, Y" }}.</p>
 
 渲染一个模板
 
-一旦你创建一个`Template`对象，你可以用 context 来传递数据给它。 一个context是一系列变量和它们值的集合。【有一个 context小解 可以看看】
+一旦你创建一个`Template`对象，你可以用context来传递数据给它。 一个context是一系列变量和它们值的集合。【有一个context小解 可以看看】
 
 上下文 context 在Django里表现为`Context`类，在`django.template`模块里。 它的构造函数带有一个可选的参数：一个字典映射变量和它们的值。 调用`Template`对象的`render()`方法并传递context来填充模板：
 
-	>>> from django.template import Context, Template
-	>>> t = Template('My name is {{ name }}.')
-	>>> c = Context({'name': 'Stephane'})
-	>>> t.render(c)
-	u'My name is Stephane.'
+```python
+>>> from django.template import Context, Template
+>>> t = Template('My name is {{ name }}.')
+>>> c = Context({'name': 'Stephane'})
+>>> t.render(c)
+u'My name is Stephane.'
+```
 
 我们必须指出的一点是，`t.render(c)`返回的值是一个`Unicode对象`，不是普通的Python字符串【py3中如何呢？待研究】。 你可以通过字符串前的u来区分。 在整个Django框架中，使用的字符都是Unicode对象而不是普通的字符串。 如果你明白这样做给你带来了多大便利的话，尽可能地感激Django在幕后有条不紊地为你所做这这么多工作吧。 如果不明白你从中获益了什么，别担心。你只需要知道Django对Unicode的支持，将让你的应用程序轻松地处理各式各样的字符集，而不仅仅是基本的A-Z英文字符。
 
@@ -169,32 +179,34 @@ Python的字典数据类型就是关键字和它们值的一个映射。`Context
 
 下面是编写模板并渲染的例子：
 
-	>>> from django.template import Template, Context
-	>>> raw_template = """<p>Dear {{ person_name }},</p>
-	...
-	... <p>Thanks for placing an order from {{ company }}. It's scheduled to
-	... ship on {{ ship_date|date:"F j, Y" }}.</p>
-	...
-	... {% if ordered_warranty %}
-	... <p>Your warranty information will be included in the packaging.</p>
-	... {% else %}
-	... <p>You didn't order a warranty, so you're on your own when
-	... the products inevitably stop working.</p>
-	... {% endif %}
-	...
-	... <p>Sincerely,<br />{{ company }}</p>"""
-	>>> t = Template(raw_template)
-	>>> import datetime
-	>>> c = Context({'person_name': 'John Smith',
-	...     'company': 'Outdoor Equipment',
-	...     'ship_date': datetime.date(2009, 4, 2),
-	...     'ordered_warranty': False})
-	>>> t.render(c)
-	u"<p>Dear John Smith,</p>\n\n<p>Thanks for placing an order from Outdoor
-	Equipment. It's scheduled to\nship on April 2, 2009.</p>\n\n\n<p>You
-	didn't order a warranty, so you're on your own when\nthe products
-	inevitably stop working.</p>\n\n\n<p>Sincerely,<br />Outdoor Equipment
-	</p>"
+```python
+>>> from django.template import Template, Context
+>>> raw_template = """<p>Dear {{ person_name }},</p>
+...
+... <p>Thanks for placing an order from {{ company }}. It's scheduled to
+... ship on {{ ship_date|date:"F j, Y" }}.</p>
+...
+... {% if ordered_warranty %}
+... <p>Your warranty information will be included in the packaging.</p>
+... {% else %}
+... <p>You didn't order a warranty, so you're on your own when
+... the products inevitably stop working.</p>
+... {% endif %}
+...
+... <p>Sincerely,<br />{{ company }}</p>"""
+>>> t = Template(raw_template)
+>>> import datetime
+>>> c = Context({'person_name': 'John Smith',
+...     'company': 'Outdoor Equipment',
+...     'ship_date': datetime.date(2009, 4, 2),
+...     'ordered_warranty': False})
+>>> t.render(c)
+u"<p>Dear John Smith,</p>\n\n<p>Thanks for placing an order from Outdoor
+Equipment. It's scheduled to\nship on April 2, 2009.</p>\n\n\n<p>You
+didn't order a warranty, so you're on your own when\nthe products
+inevitably stop working.</p>\n\n\n<p>Sincerely,<br />Outdoor Equipment
+</p>"
+```
 
 让我们逐步来分析下这段代码：
 
@@ -213,26 +225,30 @@ Python的字典数据类型就是关键字和它们值的一个映射。`Context
 
 一旦有了`Template`对象，你就可以通过它渲染多个context，例如：
 
-	>>> from django.template import Template, Context
-	>>> t = Template('Hello, {{ name }}')
-	>>> print t.render(Context({'name': 'John'}))
-	Hello, John
-	>>> print t.render(Context({'name': 'Julie'}))
-	Hello, Julie
-	>>> print t.render(Context({'name': 'Pat'}))
-	Hello, Pat
+```python
+>>> from django.template import Template, Context
+>>> t = Template('Hello, {{ name }}')
+>>> print t.render(Context({'name': 'John'}))
+Hello, John
+>>> print t.render(Context({'name': 'Julie'}))
+Hello, Julie
+>>> print t.render(Context({'name': 'Pat'}))
+Hello, Pat
+```
 
 无论何时我们都可以像这样使用同一模板源渲染多个context，只进行**一次**`Template`对象的创建，然后多次调用`render()`方法渲染，这样会更高效：
 
-	# Bad
-	for name in ('John', 'Julie', 'Pat'):
-	    t = Template('Hello, {{ name }}')
-	    print t.render(Context({'name': name}))
-	
-	# Good
-	t = Template('Hello, {{ name }}')
-	for name in ('John', 'Julie', 'Pat'):
-	    print t.render(Context({'name': name}))
+```python
+# Bad
+for name in ('John', 'Julie', 'Pat'):
+    t = Template('Hello, {{ name }}')
+    print t.render(Context({'name': name}))
+
+# Good
+t = Template('Hello, {{ name }}')
+for name in ('John', 'Julie', 'Pat'):
+    print t.render(Context({'name': name}))
+```
 
 Django的模板解析相当快捷。大部分的解析工作都是在后台通过对简短正则表达式一次性调用来完成。这和基于XML的模板引擎形成鲜明对比，那些引擎承担了XML解析器的开销，且往往比Django模板渲染引擎要慢上几个数量级。【没有jinja2牛逼】
 
@@ -244,64 +260,74 @@ Django的模板解析相当快捷。大部分的解析工作都是在后台通�
 
 最好是用几个例子来说明一下。比如，假设你要向模板传递一个Python字典。要通过**字典键**访问该字典的值，可使用一个句点：
 
-	>>> from django.template import Template, Context
-	>>> person = {'name': 'Sally', 'age': '43'}
-	>>> t = Template('{{ person.name }} is {{ person.age }} years old.')
-	>>> c = Context({'person': person})
-	>>> t.render(c)
-	u'Sally is 43 years old.'
+```python
+>>> from django.template import Template, Context
+>>> person = {'name': 'Sally', 'age': '43'}
+>>> t = Template('{{ person.name }} is {{ person.age }} years old.')
+>>> c = Context({'person': person})
+>>> t.render(c)
+u'Sally is 43 years old.'
+```
 
 同样，也可以通过句点来访问对象的属性。比方说， Python的`datetime.date`对象有`year`、`month`和`day`几个属性，你同样可以在模板中使用句点来访问这些属性*attributes*：
 
-	>>> from django.template import Template, Context
-	>>> import datetime
-	>>> d = datetime.date(1993, 5, 2)
-	>>> d.year
-	1993
-	>>> d.month
-	5
-	>>> d.day
-	2
-	>>> t = Template('The month is {{ date.month }} and the year is {{ date.year }}.')
-	>>> c = Context({'date': d})
-	>>> t.render(c)
-	u'The month is 5 and the year is 1993.'
+```python
+>>> from django.template import Template, Context
+>>> import datetime
+>>> d = datetime.date(1993, 5, 2)
+>>> d.year
+1993
+>>> d.month
+5
+>>> d.day
+2
+>>> t = Template('The month is {{ date.month }} and the year is {{ date.year }}.')
+>>> c = Context({'date': d})
+>>> t.render(c)
+u'The month is 5 and the year is 1993.'
+```
 
 这个例子使用了一个自定义类*custom class*，演示了通过实例变量加点(dot)来访问它的属性，这个方法适用于任意的对象：
 
-	>>> from django.template import Template, Context
-	>>> class Person(object):
-	...     def __init__(self, first_name, last_name):
-	...         self.first_name, self.last_name = first_name, last_name
-	>>> t = Template('Hello, {{ person.first_name }} {{ person.last_name }}.')
-	>>> c = Context({'person': Person('John', 'Smith')})
-	>>> t.render(c)
-	u'Hello, John Smith.'
+```python
+>>> from django.template import Template, Context
+>>> class Person(object):
+...     def __init__(self, first_name, last_name):
+...         self.first_name, self.last_name = first_name, last_name
+>>> t = Template('Hello, {{ person.first_name }} {{ person.last_name }}.')
+>>> c = Context({'person': Person('John', 'Smith')})
+>>> t.render(c)
+u'Hello, John Smith.'
+```
 
 点语法也可以用来引用对象的**方法***methods*。 例如，每个Python字符串都有`upper()`和`isdigit()`方法，你在模板中可以使用同样的句点语法来调用它们：
 
-	>>> from django.template import Template, Context
-	>>> t = Template('{{ var }} -- {{ var.upper }} -- {{ var.isdigit }}')
-	>>> t.render(Context({'var': 'hello'}))
-	u'hello -- HELLO -- False'
-	>>> t.render(Context({'var': '123'}))
-	u'123 -- 123 -- True'
+```python
+>>> from django.template import Template, Context
+>>> t = Template('{{ var }} -- {{ var.upper }} -- {{ var.isdigit }}')
+>>> t.render(Context({'var': 'hello'}))
+u'hello -- HELLO -- False'
+>>> t.render(Context({'var': '123'}))
+u'123 -- 123 -- True'
+```
 
 注意这里调用方法时**并没有**使用圆括号,而且也无法给该方法传递参数；你只能调用**不需参数**的方法。（我们将在本章稍后部分解释该哲学。）
 
 最后，句点也可用于访问列表索引*list indices*，例如：
 
-	>>> from django.template import Template, Context
-	>>> t = Template('Item 2 is {{ items.2 }}.')
-	>>> c = Context({'items': ['apples', 'bananas', 'carrots']})
-	>>> t.render(c)
-	u'Item 2 is carrots.'
+```python
+>>> from django.template import Template, Context
+>>> t = Template('Item 2 is {{ items.2 }}.')
+>>> c = Context({'items': ['apples', 'bananas', 'carrots']})
+>>> t.render(c)
+u'Item 2 is carrots.'
+```
 
 Django不允许使用负数列表索引。像`{{ items.-1 }}`这样的模板变量将会引发`TemplateSyntaxError`。
 
-***
+* * *
 Python列表类型
-***
+* * *
 
 一点提示：Python的列表是从0开始索引。第一项的索引是0，第二项的是1，依此类推。
 
@@ -316,12 +342,14 @@ Python列表类型
 
 句点查找可以多级深度嵌套。例如在下面这个例子中 `{{person.name.upper}}`会转换成字典类型查找（`person['name']`)然后是方法调用（`upper()`):
 
-	>>> from django.template import Template, Context
-	>>> person = {'name': 'Sally', 'age': '43'}
-	>>> t = Template('{{ person.name.upper }} is {{ person.age }} years old.')
-	>>> c = Context({'person': person})
-	>>> t.render(c)
-	u'SALLY is 43 years old.'
+```python
+>>> from django.template import Template, Context
+>>> person = {'name': 'Sally', 'age': '43'}
+>>> t = Template('{{ person.name.upper }} is {{ person.age }} years old.')
+>>> c = Context({'person': person})
+>>> t.render(c)
+u'SALLY is 43 years old.'
+```
 
 ### 方法调用行为 ###
 
@@ -329,53 +357,59 @@ Python列表类型
 
 - 在方法查找过程中，如果某方法抛出一个异常，除非该异常有一个`silent_variable_failure`属性并且它的值为`True`，否则的话它将被传播*propagated*。如果异常确实有`silent_variable_failure`属性，那么模板里的指定变量会被置为空字符串*empty string*，比如:
 
-		>>> t = Template("My name is {{ person.first_name }}.")
-		>>> class PersonClass3:
-		...     def first_name(self):
-		...         raise AssertionError, "foo"
-		>>> p = PersonClass3()
-		>>> t.render(Context({"person": p}))
-		Traceback (most recent call last):
-		...
-		AssertionError: foo
-		
-		>>> class SilentAssertionError(AssertionError):
-		...     silent_variable_failure = True
-		>>> class PersonClass4:
-		...     def first_name(self):
-		...         raise SilentAssertionError
-		>>> p = PersonClass4()
-		>>> t.render(Context({"person": p}))
-		u'My name is .'
+    ```python
+    >>> t = Template("My name is {{ person.first_name }}.")
+    >>> class PersonClass3:
+    ...     def first_name(self):
+    ...         raise AssertionError, "foo"
+    >>> p = PersonClass3()
+    >>> t.render(Context({"person": p}))
+    Traceback (most recent call last):
+    ...
+    AssertionError: foo
+
+    >>> class SilentAssertionError(AssertionError):
+    ...     silent_variable_failure = True
+    >>> class PersonClass4:
+    ...     def first_name(self):
+    ...         raise SilentAssertionError
+    >>> p = PersonClass4()
+    >>> t.render(Context({"person": p}))
+    u'My name is .'
+    ```
 
 - 仅在方法无需传入参数时，其调用才有效。 否则，系统将会转移到下一个查找类型（列表索引查找）。
 
 - 显然，有些方法是有副作用的，允许模板系统访问它们，在好的情况下可能只是干件蠢事，坏的情况下甚至会引发安全漏洞*security hole*。
 
-	例如，你有一个 `BankAccount` 对象，它有一个 `delete()` 方法。 如果某个模板中包含了像 `{{ account.delete }}`这样的标签，其中`account`又是`BankAccount`的一个实例，请注意在渲染这个模板时，该`account`对象将被删除！
+    例如，你有一个 `BankAccount` 对象，它有一个 `delete()` 方法。 如果某个模板中包含了像 `{{ account.delete }}`这样的标签，其中`account`又是`BankAccount`的一个实例，请注意在渲染这个模板时，该`account`对象将被删除！
 
-	要防止这样的事情发生，必须设置该方法的 `alters_data` 函数属性：
+    要防止这样的事情发生，必须设置该方法的 `alters_data` 函数属性：
 
-		def delete(self):
-		    # Delete the account
-		delete.alters_data = True
+    ```python
+    def delete(self):
+        # Delete the account
+    delete.alters_data = True
+    ```
 
-	模板系统不会执行任何以该方式进行标记的方法。接上面的例子，如果模板文件里包含了 `{{ account.delete }}` ，对象又具有 `delete()`方法，而且`delete()`有`alters_data=True`这个属性，那么在模板载入时，`delete()`方法将不会被执行。它将静静地错误退出。
+    模板系统不会执行任何以该方式进行标记的方法。接上面的例子，如果模板文件里包含了 `{{ account.delete }}` ，对象又具有 `delete()`方法，而且`delete()`有`alters_data=True`这个属性，那么在模板载入时，`delete()`方法将不会被执行。它将静静地错误退出。
 
 ### Django如何处理无效变量 ###
 
 默认情况下，如果一个变量不存在，模板系统会把它展示为**空字符串**，不做任何事情来表示失败。 例如：
 
-	>>> from django.template import Template, Context
-	>>> t = Template('Your name is {{ name }}.')
-	>>> t.render(Context())
-	u'Your name is .'
-	>>> t.render(Context({'var': 'hello'}))
-	u'Your name is .'
-	>>> t.render(Context({'NAME': 'hello'}))
-	u'Your name is .'
-	>>> t.render(Context({'Name': 'hello'}))
-	u'Your name is .'
+```python
+>>> from django.template import Template, Context
+>>> t = Template('Your name is {{ name }}.')
+>>> t.render(Context())
+u'Your name is .'
+>>> t.render(Context({'var': 'hello'}))
+u'Your name is .'
+>>> t.render(Context({'NAME': 'hello'}))
+u'Your name is .'
+>>> t.render(Context({'Name': 'hello'}))
+u'Your name is .'
+```
 
 系统静悄悄地表示失败，而不是抛出一个异常，因为这通常是人为错误造成的。这种情况下，因为变量名有错误的状况或名称，所有的查询都会失败。 现实世界中，对于一个web站点来说，如果仅仅因为一个小的模板语法错误而造成无法访问，这是不能接受的。
 
@@ -383,18 +417,20 @@ Python列表类型
 
 多数时间，你可以通过传递一个完全填充*full populated*的字典给 `Context()` 来初始化 `Context`对象。 但是初始化以后，你也可以使用标准的Python字典句法*syntax*向`Context`对象添加或者删除条目：
 
-	>>> from django.template import Context
-	>>> c = Context({"foo": "bar"})
-	>>> c['foo']
-	'bar'
-	>>> del c['foo']
-	>>> c['foo']
-	Traceback (most recent call last):
-	  ...
-	KeyError: 'foo'
-	>>> c['newvariable'] = 'hello'
-	>>> c['newvariable']
-	'hello'
+```python
+>>> from django.template import Context
+>>> c = Context({"foo": "bar"})
+>>> c['foo']
+'bar'
+>>> del c['foo']
+>>> c['foo']
+Traceback (most recent call last):
+  ...
+KeyError: 'foo'
+>>> c['newvariable'] = 'hello'
+>>> c['newvariable']
+'hello'
+```
 
 ## 基本的模板标签和过滤器 ##
 
@@ -406,17 +442,21 @@ Python列表类型
 
 `{% if %}`标签检查一个变量，如果这个变量为真（即，变量存在，非空，不是布尔值假），系统会显示在`{% if %}`和`{% endif %}`之间的任何内容，例如：
 
-	{% if today_is_weekend %}
-	    <p>Welcome to the weekend!</p>
-	{% endif %}
+```django
+{% if today_is_weekend %}
+    <p>Welcome to the weekend!</p>
+{% endif %}
+```
 
 `{% else %}`标签是可选的：
 
-	{% if today_is_weekend %}
-	    <p>Welcome to the weekend!</p>
-	{% else %}
-	    <p>Get back to work.</p>
-	{% endif %}
+```django
+{% if today_is_weekend %}
+    <p>Welcome to the weekend!</p>
+{% else %}
+    <p>Get back to work.</p>
+{% endif %}
+```
 
 ***
 Python的“真值”
@@ -426,7 +466,7 @@ Python的“真值”
 
 - 空列表　　[]
 - 空元组　　()
-- 空字典　　{} 
+- 空字典　　{}
 - 空字符串　''
 - 零值　　　0
 - 特殊对象　None
@@ -437,52 +477,62 @@ Python的“真值”
 
 `{% if %}`标签接受`and`，`or`或者`not`关键字来对多个变量做判断，或者对变量取反，例如：
 
-	{% if athlete_list and coach_list %}
-	    Both athletes and coaches are available.
-	{% endif %}
-	
-	{% if not athlete_list %}
-	    There are no athletes.
-	{% endif %}
-	
-	{% if athlete_list or coach_list %}
-	    There are some athletes or some coaches.
-	{% endif %}
-	
-	{% if not athlete_list or coach_list %}
-	    There are no athletes or there are some coaches.
-	{% endif %}
-	
-	{% if athlete_list and not coach_list %}
-	    There are some athletes and absolutely no coaches.
-	{% endif %}
+```django
+{% if athlete_list and coach_list %}
+    Both athletes and coaches are available.
+{% endif %}
+
+{% if not athlete_list %}
+    There are no athletes.
+{% endif %}
+
+{% if athlete_list or coach_list %}
+    There are some athletes or some coaches.
+{% endif %}
+
+{% if not athlete_list or coach_list %}
+    There are no athletes or there are some coaches.
+{% endif %}
+
+{% if athlete_list and not coach_list %}
+    There are some athletes and absolutely no coaches.
+{% endif %}
+```
 
 {% if %}标签不允许在同一个标签中同时使用`and` 和`or`，因为逻辑上可能模糊的。例如，下面的代码是非法的：
 
-	{% if athlete_list and coach_list or cheerleader_list %}
+```django
+{% if athlete_list and coach_list or cheerleader_list %}
+```
 
 系统不支持用圆括号来处理比较操作的顺序。如果你确实需要用到圆括号来组合表达你的逻辑式，考虑将它移到模板之外处理，然后以模板变量的形式传入结果吧。或者，仅仅用嵌套的`{% if %}`标签替换吧，就像这样：
 
-	{% if athlete_list %}
-	    {% if coach_list or cheerleader_list %}
-	        We have athletes, and either coaches or cheerleaders!
-	    {% endif %}
-	{% endif %}
+```django
+{% if athlete_list %}
+    {% if coach_list or cheerleader_list %}
+        We have athletes, and either coaches or cheerleaders!
+    {% endif %}
+{% endif %}
+```
 
 多次使用同一个逻辑操作符是没有问题的，但是我们不能把不同的操作符组合起来。例如，这是合法的：
 
-	{% if athlete_list or coach_list or parent_list or teacher_list %}
+```django
+{% if athlete_list or coach_list or parent_list or teacher_list %}
+```
 
 Django模板没有`{% elif %}`标签，请使用嵌套的`{% if %}`标签来达成同样的效果：
 
-	{% if athlete_list %}
-	    <p>Here are the athletes: {{ athlete_list }}.</p>
-	{% else %}
-	    <p>No athletes are available.</p>
-	    {% if coach_list %}
-	        <p>Here are the coaches: {{ coach_list }}.</p>
-	    {% endif %}
-	{% endif %}
+```django
+{% if athlete_list %}
+    <p>Here are the athletes: {{ athlete_list }}.</p>
+{% else %}
+    <p>No athletes are available.</p>
+    {% if coach_list %}
+        <p>Here are the coaches: {{ coach_list }}.</p>
+    {% endif %}
+{% endif %}
+```
 
 一定要用`{% endif %}`关闭每一个`{% if %}`标签。
 
@@ -492,46 +542,56 @@ Django模板没有`{% elif %}`标签，请使用嵌套的`{% if %}`标签来达�
 
 例如，给定一个运动员列表`athlete_list`变量，我们可以使用下面的代码来显示这个列表：
 
-	<ul>
-	{% for athlete in athlete_list %}
-	    <li>{{ athlete.name }}</li>
-	{% endfor %}
-	</ul>
+```django
+<ul>
+{% for athlete in athlete_list %}
+    <li>{{ athlete.name }}</li>
+{% endfor %}
+</ul>
+```
 
 在标签末尾添加一个`reversed`参数，使得该列表被反向迭代：
 
-	{% for athlete in athlete_list reversed %}
-	...
-	{% endfor %}
+```django
+{% for athlete in athlete_list reversed %}
+...
+{% endfor %}
+```
 
 可以嵌套使用`{% for %}`标签：【重要】
 
-	{% for athlete in athlete_list %}
-	    <h1>{{ athlete.name }}</h1>
-	    <ul>
-	    {% for sport in athlete.sports_played %}
-	        <li>{{ sport }}</li>
-	    {% endfor %}
-	    </ul>
-	{% endfor %}
+```django
+{% for athlete in athlete_list %}
+    <h1>{{ athlete.name }}</h1>
+    <ul>
+    {% for sport in athlete.sports_played %}
+        <li>{{ sport }}</li>
+    {% endfor %}
+    </ul>
+{% endfor %}
+```
 
 在执行循环之前先检测列表的大小是一个通常的做法，当**列表为空**时输出一些特别的提示：【重要】
 
-	{% if athlete_list %}
-	    {% for athlete in athlete_list %}
-	        <p>{{ athlete.name }}</p>
-	    {% endfor %}
-	{% else %}
-	    <p>There are no athletes. Only computer programmers.</p>
-	{% endif %}
+```django
+{% if athlete_list %}
+    {% for athlete in athlete_list %}
+        <p>{{ athlete.name }}</p>
+    {% endfor %}
+{% else %}
+    <p>There are no athletes. Only computer programmers.</p>
+{% endif %}
+```
 
 因为这种做法十分常见，所以`for`标签支持一个可选的`{% empty %}`分句，通过它我们可以定义当列表为空时的输出内容。下面的例子与之前那个等价：
 
-	{% for athlete in athlete_list %}
-	    <p>{{ athlete.name }}</p>
-	{% empty %}
-	    <p>There are no athletes. Only computer programmers.</p>
-	{% endfor %}
+```django
+{% for athlete in athlete_list %}
+    <p>{{ athlete.name }}</p>
+{% empty %}
+    <p>There are no athletes. Only computer programmers.</p>
+{% endfor %}
+```
 
 Django模板**不支持**退出循环操作。如果我们想退出循环，可以改变正在迭代的变量，让其仅仅包含需要迭代的项目。 同理，Django也不支持continue语句，我们无法让当前迭代操作跳回到循环头部。（请参看本章稍后的**设计哲学和限制**小节，了解一下决定这个设计的背后原因）
 
@@ -539,9 +599,11 @@ Django模板**不支持**退出循环操作。如果我们想退出循环，可�
 
 - `forloop.counter`总是一个表示当前循环的执行次数的整数计数器。这个计数器是从1开始的，所以在第一次循环时`forloop.counter`将会被设置为`1`。请看例子：
 
-		{% for item in todo_list %}
-		    <p>{{ forloop.counter }}: {{ item }}</p>
-		{% endfor %}
+    ```django
+    {% for item in todo_list %}
+        <p>{{ forloop.counter }}: {{ item }}</p>
+    {% endfor %}
+    ```
 
 - `forloop.counter0`类似于`forloop.counter`，但是它是从0计数的。第一次执行循环时这个变量会被设置为`0`。
 
@@ -551,39 +613,48 @@ Django模板**不支持**退出循环操作。如果我们想退出循环，可�
 
 - `forloop.first`是一个布尔值，如果该迭代是第一次执行，那么它被置为`True`。在下面的特殊案例中这个变量是很有用的：【把第一个设置成active？】
 
-		{% for object in objects %}
-		    {% if forloop.first %}<li class="first">{% else %}<li>{% endif %}
-		    {{ object }}
-		    </li>
-		{% endfor %}
+    ```django
+    {% for object in objects %}
+        {% if forloop.first %}<li class="first">{% else %}<li>{% endif %}
+        {{ object }}
+        </li>
+    {% endfor %}
+    ```
 
 - `forloop.last`是一个布尔值，在最后一次执行循环时被置为True。一个常见用法是在一系列的链接之间放置管道符（|）：【if嵌套在for内部判断这个变量的属性】
 
-		{% for link in links %}{{ link }}{% if not forloop.last %} | {% endif %}{% endfor %}
+    ```django
+    {% for link in links %}{{ link }}{% if not forloop.last %} | {% endif %}{% endfor %}
+    ```
 
-	上面的模板可能会产生如下的结果：
+    上面的模板可能会产生如下的结果：
 
-		Link1 | Link2 | Link3 | Link4
+    ```django
+    Link1 | Link2 | Link3 | Link4
+    ```
 
-	另一个常见的用途是为列表中的每个单词的加上逗号：
+    另一个常见的用途是为列表中的每个单词的加上逗号：
 
-		Favorite places:
-		{% for p in places %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    ```django
+    Favorite places:
+    {% for p in places %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    ```
 
 - `forloop.parentloop`是一个指向当前循环的上一级循环的`forloop`对象的引用（在嵌套循环的情况下）。 例子在此：
 
-		```django
-		{% for country in countries %}
-		    <table>
-		    {% for city in country.city_list %}
-		        <tr>
-		        <td>Country #{{ forloop.parentloop.counter }}</td>
-		        <td>City #{{ forloop.counter }}</td>
-		        <td>{{ city }}</td>
-		        </tr>
-		    {% endfor %}
-		    </table>
-		{% endfor %}
+    ```django
+    {% for country in countries %}
+        <table>
+        {% for city in country.city_list %}
+            <tr>
+            <td>Country #{{ forloop.parentloop.counter }}</td>
+            <td>City #{{ forloop.counter }}</td>
+            <td>{{ city }}</td>
+            </tr>
+        {% endfor %}
+        </table>
+    {% endfor %}
+    ```
 
 `forloop`魔法变量，仅能在循环中使用。在模板解析器碰到`{% endfor %}`标签后，`forloop`就消失了。
 
