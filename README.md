@@ -25,37 +25,39 @@ def current_datetime(request):
 
 让我们从一个简单的例子模板开始。该模板描述了一个向某个与公司签单人员致谢 HTML 页面。可将其视为一个格式信函：
 
-	<html>
-	<head><title>Ordering notice</title></head>
-	
-	<body>
-	
-	<h1>Ordering notice</h1>
-	
-	<p>Dear {{ person_name }},</p>
-	
-	<p>Thanks for placing an order from {{ company }}. It's scheduled to
-	ship on {{ ship_date|date:"F j, Y" }}.</p>
-	
-	<p>Here are the items you've ordered:</p>
-	
-	<ul>
-	{% for item in item_list %}
-	    <li>{{ item }}</li>
-	{% endfor %}
-	</ul>
-	
-	{% if ordered_warranty %}
-	    <p>Your warranty information will be included in the packaging.</p>
-	{% else %}
-	    <p>You didn't order a warranty, so you're on your own when
-	    the products inevitably stop working.</p>
-	{% endif %}
-	
-	<p>Sincerely,<br />{{ company }}</p>
-	
-	</body>
-	</html>
+```django+html
+<html>
+<head><title>Ordering notice</title></head>
+
+<body>
+
+<h1>Ordering notice</h1>
+
+<p>Dear {{ person_name }},</p>
+
+<p>Thanks for placing an order from {{ company }}. It's scheduled to
+ship on {{ ship_date|date:"F j, Y" }}.</p>
+
+<p>Here are the items you've ordered:</p>
+
+<ul>
+{% for item in item_list %}
+    <li>{{ item }}</li>
+{% endfor %}
+</ul>
+
+{% if ordered_warranty %}
+    <p>Your warranty information will be included in the packaging.</p>
+{% else %}
+    <p>You didn't order a warranty, so you're on your own when
+    the products inevitably stop working.</p>
+{% endif %}
+
+<p>Sincerely,<br />{{ company }}</p>
+
+</body>
+</html>
+```
 
 该模板是一段添加了些许变量和模板标签的基础  HTML。让我们逐步分析一下：
 
