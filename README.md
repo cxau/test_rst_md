@@ -25,7 +25,7 @@ def current_datetime(request):
 
 让我们从一个简单的例子模板开始。该模板描述了一个向某个与公司签单人员致谢 HTML 页面。可将其视为一个格式信函：
 
-```django+html
+```django
 <html>
 <head><title>Ordering notice</title></head>
 
