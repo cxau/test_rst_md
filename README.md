@@ -2,12 +2,12 @@
 
 在前一章中，你可能已经注意到我们在例子视图中返回文本的方式有点特别。 也就是说，HTML 被直接硬编码在 Python 代码之中。
 
-    ```python
-    def current_datetime(request):
-        now = datetime.datetime.now()
-        html = "<html><body>It is now %s.</body></html>" % now
-        return HttpResponse(html)
-    ```
+```python
+def current_datetime(request):
+    now = datetime.datetime.now()
+    html = "<html><body>It is now %s.</body></html>" % now
+    return HttpResponse(html)
+```
 
 尽管这种技术便于解释视图是如何工作的，但直接将HTML硬编码到你的视图里却并不是一个好主意。 让我们来看一下为什么：
 
