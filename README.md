@@ -1,6 +1,6 @@
 # 第4章 模板 #
 
-在前一章中，你可能已经注意到我们在例子视图中返回文本的方式有点特别。也就是说，HTML 被直接硬编码在 Python 代码之中。
+在前一章中，你可能已经注意到我们在例子视图中返回文本的方式有点特别。也就是说，HTML被直接硬编码在Python代码之中。
 
 ```Python
 def current_datetime(request):
@@ -9,21 +9,21 @@ def current_datetime(request):
     return HttpResponse(html)
 ```
 
-尽管这种技术便于解释视图是如何工作的，但直接将HTML硬编码到你的视图里却并不是一个好主意。让我们来看一下为什么：
+尽管这种技巧便于解释视图是如何工作的，但直接将HTML硬编码到你的视图里却并不是一个好主意。让我们来看一下为什么：
 
-- 对页面设计进行的任何改变都必须对 Python 代码进行相应的修改。站点设计的修改往往比底层 Python 代码的修改要频繁得多，因此如果可以在不进行 Python 代码修改的情况下变更设计，那将会方便得多。
+- 对页面设计进行的任何改变都必须对Python代码进行相应的修改。站点设计的修改往往比底层 Python代码的修改要频繁得多，因此如果可以在不进行Python代码修改的情况下变更设计，那将会方便得多。
 
-- Python 代码编写和 HTML 设计是两项不同的工作，大多数专业的网站开发环境都将他们分配给不同的人员（甚至不同部门）来完成。设计者和 HTML/CSS 的编码人员不应该被要求去编辑 Python 的代码来完成他们的工作。
+- Python代码编写和HTML设计是两项不同的工作，大多数专业的网站开发环境都将他们分配给不同的人员（甚至不同部门）来完成。我们不应该要求设计者和HTML/CSS编码人员通过编辑Python代码，来完成他们的工作。
 
-- 程序员编写 Python 代码和设计人员制作模板两项工作同时进行的效率是最高的，远胜于让一个人等待另一个人完成对某个既包含 Python 又包含 HTML 的文件的编辑工作。
+- 程序员编写Python代码和设计人员制作模板两项工作同时进行的效率是最高的【正确的人做正确的事】，远胜于让一个人等待另一个人完成对某个既包含Python又包含HTML的文件的编辑工作。
 
-基于这些原因，将页面的设计和Python的代码分离开会更干净简洁更容易维护。我们可以使用  Django 的模板系统 *Template System* 来实现这种模式，这就是本章要具体讨论的问题。
+基于这些原因，将页面的设计和Python的代码分离开会更干净简洁更容易维护。我们可以使用  Django的模板系统*Template System*来实现这种模式，这就是本章要具体讨论的问题。
 
 ## 模板系统基本知识 ##
 
-模板是一个文本，用于分离文档的表现形式和内容。 模板定义了占位符以及各种用于规范文档该如何显示的各部分基本逻辑（模板标签）。模板通常用于产生 HTML，但是 Django 的模板也能产生任何基于文本格式的文档。
+模板*template*是一个文本，用于分离文档的表现形式和内容。模板定义了占位符*placeholders*以及各种用于规范文档该如何显示的各部分基本逻辑（模板标签*template tags*）。模板通常用于产生 HTML，但是Django的模板也能产生任何基于文本格式的文档。
 
-让我们从一个简单的例子模板开始。该模板描述了一个向某个与公司签单人员致谢 HTML 页面。可将其视为一个格式信函：
+让我们从一个简单的例子模板开始。该模板描述了一个向某个与公司签单人员致谢的HTML页面。可将其视为一个格式信函：
 
 ```HTML+Django
 <html>
@@ -59,32 +59,31 @@ ship on {{ ship_date|date:"F j, Y" }}.</p>
 </html>
 ```
 
-该模板是一段添加了些许变量和模板标签的基础HTML。让我们逐步分析一下：
+该模板是一段添加了些许变量和模板标签的基础HTML。让我们逐步分析一下：【变量中大括号和变量部的空格位，只是编码的一种风格】
 
-- 用两个大括号括起来的文字（如
-`{{ person_name }}` ）称为 变量 *variable*。这意味着“在此处插入指定变量的值。”（如何指定变量的值呢？稍后就会说明。）
+- 用两个大括号括起来的文字（如`{{ person_name }}`）称为变量*variable*。这意味着“在此处插入指定变量的值。”（如何指定变量的值呢？稍后就会说明。）
 
-- 被大括号和百分号包围的文本（如 `{% if ordered_warranty %}` ）是 模板标签 *template tag*。标签 *tag* 定义比较明确，即：标签通知模板系统去做某些事情。
+- 被大括号和百分号包围的文本（如`{% if ordered_warranty %}`）是模板标签*template tag*。标签*tag*定义比较明确，即：标签通知模板系统去做某些事情。
 
-    这个例子中的模板包含一个 `for` 标签（ `{% for item in item_list %}` ）和一个 `if` 标签（`{% if ordered_warranty %}` ）
+    这个例子中的模板包含一个`for`标签（`{% for item in item_list %}`）和一个`if`标签（`{% if ordered_warranty %}`）
 
-    `for` 标签类似 Python 的 for 语句，可让你循环访问序列里的每一个项目。if 标签，正如你所料，是用来执行逻辑判断的。在这里，tag 标签检查 ordered_warranty 值是否为 `True`。如果是，模板系统将显示 `{% if ordered_warranty %}` 和 `{% else %}` 之间的内容；否则将显示 `{% else %}` 和 `{% endif %}` 之间的内容。注意 `{% else %}` 是可选的。
+    `for`标签类似Python的for语句，可让你循环访问序列里的每一个项目。if标签，正如你所料，是用来执行逻辑判断的。在这里，tag标签检查`ordered_warranty`值是否为`True`。如果是，模板系统将显示`{% if ordered_warranty %}`和`{% else %}`之间的内容；否则将显示 `{% else %}`和`{% endif %}`之间的内容。注意`{% else %}`是可选的。
 
-- 最后，这个模板的第二段中有一个关于 过滤器 *filter* 的例子，它是一种最便捷的转换变量输出格式的方式。 如这个例子中的 `{{ ship_date|date:"F j, Y" }}`，我们将变量 `ship_date` 传递给 `date` 过滤器，同时指定参数 `”F j,Y”`。过滤器 `date` 根据参数进行格式输出。 过滤器是用管道符(`|`)来调用的，具体可以参见 Unix 管道符。
+- 最后，这个模板的第二段中有一个关于过滤器*filter*的例子，它是一种最便捷的转换变量输出格式的方式。如这个例子中的`{{ ship_date|date:"F j, Y" }}`，我们将变量`ship_date`传递给 `date`过滤器，同时指定参数`”F j,Y”`。过滤器`date`根据参数进行格式输出。过滤器是用管道符（`|`）来调用的，具体可以参见Unix管道符。【提示：管道符('|')前后好像不能有空格，有空格会出错。】
 
-每个 Django 模板含有很多内置的 tags 和 filters，我们将陆续进行学习. 附录F列出了很多的 tags 和 filters 的列表，熟悉这些列表对你来说是个好建议.你依然可以利用它创建自己的 filters 和 tags 。这些我们在第9章会讲到。
+每个Django模板含有很多内置的tags和filters，我们将陆续进行学习。附录F列出了很多的tags和 filters的列表，熟悉这些列表对你来说是个好建议。你依然可以利用它创建自己的filters和 tags。这些我们在第9章会讲到。
 
 ## 使用模板系统 ##
 
-让我们深入研究模板系统，你将会明白它是如何工作的。但我们暂不打算将它与先前创建的视图结合在一起，因为我们现在的目的是了解它是如何独立工作的。 。 （换言之， 通常你会将模板和视图一起使用，但是我们只是想突出模板系统是一个Python库，你可以在任何地方使用它，而不仅仅是在Django视图中。）
+让我们深入研究模板系统，你将会明白它是如何工作的。但我们暂不打算将它与先前创建的视图结合在一起，因为我们现在的目的是了解它是如何独立工作的。。（换言之，通常你会将模板和视图一起使用，但是我们只是想突出模板系统是一个Python库，你可以在任何地方使用它，而不仅仅是在Django视图中。）
 
-在 Python 代码中使用 Django 模板的最基本方式如下：
+在Python代码中使用Django模板的最基本方式如下：
 
-1. 可以用原始的模板代码字符串创建一个 `Template` 对象。【语句不顺】
+1. 可以用原始的模板代码字符串创建一个`Template`对象。【语句不顺】【订正：创建一个Template对象，将模板代码放入一个string中作为参数。】
 
-2. 调用模板 `Template` 对象的 `render()` 方法，并且传入一套变量context。它将返回一个基于模板的展现字符串，模板中的变量和标签会被context值替换。【不太懂】
+2. 调用模板`Template`对象的`render()`方法，并且传入一套变量context。它将返回一个基于模板的展现字符串，模板中的变量和标签会被context值替换。【订正：调用模板(template)对象的 render() 方法，把一组变量作为上下文(context)传入。这么做将会把模板(template)展开，将所有变量(variables)和标签(tags)都赋予相应的值，并作为 string 返回，】
 
-在代码中，它长成这个样子：
+在代码中，它长成这个样子：【这里需要 python manage.py shell启动，而不是直接 python启动】
 
 ```Python
 >>> from django import template
@@ -101,19 +100,19 @@ My name is Fred.
 
 ### 创建模板对象 ###
 
-创建一个 `Template` 对象最简单的方法就是直接实例化它。 `Template` 类 *class* 就在 `django.template` 模块中，构造函数 *constructor*  接受一个参数，原始模板代码 *raw template code* 。 我们进入 Python 的交互解释器，来看看它在代码中是怎么运作的。
+创建一个`Template`对象最简单的方法就是直接**实例化**它。`Template`类*class*就在`django.template`模块中，构造函数*constructor*接受一个参数，初始化raw模板代码*raw template code*。我们进入Python的交互解释器，来看看它在代码中是怎么运作的。
 
-***
+* * *
 一个特殊的Python提示符
-***
+* * *
 
-如果你曾经使用过Python，你一定好奇，为什么我们运行 `python manage.py shell` 而不是 `python` 。这两个命令都会启动交互解释器，但是`manage.py shell`命令有一个重要的不同：在启动解释器之前，它告诉Django使用哪个设置文件。Django框架的大部分子系统，包括模板系统，都依赖于配置文件，如果Django不知道使用哪个配置文件，这些系统将不能工作。
+如果你曾经使用过Python，你一定好奇，为什么我们运行`python manage.py shell`而不是`python`。这两个命令都会启动交互解释器，但是`manage.py shell`命令有一个重要的不同：在启动解释器之前，它告诉Django使用哪个设置文件。Django框架的大部分子系统，包括模板系统，都依赖于配置文件，如果Django不知道使用哪个配置文件，这些系统将不能工作。
 
-如果你好奇的话，这里解释一下它是怎样在幕后工作的。 Django搜索一个叫做`DJANGO_SETTINGS_MODULE`的环境变量，它应该位于`settings.py`设置文件中。例如，假设mysite在你的Python搜索路径中，那么`DJANGO_SETTINGS_MODULE`应该被设置为：`’mysite.settings’`。
+如果你好奇的话，这里解释一下它是怎样在幕后工作的。Django搜索一个叫做`DJANGO_SETTINGS_MODULE`的环境变量，它应该位于`settings.py`设置文件中。例如，假设mysite在你的Python搜索路径中，那么`DJANGO_SETTINGS_MODULE`应该被设置为：`'mysite.settings'`。【在django 1.5中，DJANGO_SETTINGS_MODULE是在manage.py里面设置的，本质是一个环境变量，它默认指向应用下的settings.py，也就是mysite.settings.（本书所用django版本较老）】
 
-当你运行命令：`python manage.py shell`，这个命令自动帮你设定`DJANGO_SETTINGS_MODULE`。 在当前的这些示例中，我们鼓励你使用` python manage.py shell`这个方法，这样可以免去你大费周章地去配置那些你不熟悉的环境变量。【啰嗦，过渡翻译了】
+当你运行命令：`python manage.py shell`，这个命令自动帮你设定`DJANGO_SETTINGS_MODULE`。在当前的这些示例中，我们鼓励你使用` python manage.py shell`这个方法，这样可以免去你大费周章地去配置那些你不熟悉的环境变量。【啰嗦，过度翻译了】
 
-随着你越来越熟悉Django，你可能会偏向于废弃使用`manage.py shell`，而是在你的配置文件`.bash_profile`中手动添加 `DJANGO_SETTINGS_MODULE`这个环境变量。
+随着你越来越熟悉Django，你可能会偏向于废弃使用`manage.py shell`，而是在你的配置文件`.bash_profile`中手动添加`DJANGO_SETTINGS_MODULE`这个环境变量。
 
 让我们来了解一些模板系统的基本知识：
 
@@ -129,7 +128,7 @@ My name is Fred.
 <django.template.Template object at 0xb7d5f24c>
 ```
 
-那个`0xb7d5f24c`每次都会不一样，这没什么关系；这只是Python运行时Template对象的ID。
+那个`0xb7d5f24c`每次都会不一样，这没什么关系；这只是Python运行时Template对象的ID。【对象的ID就是该对象在内存的地址。用地址做对象ID是很好的，因为对象一旦存在就一定在内存中。】
 
 当你创建一个`Template`对象，模板系统在内部编译这个模板到内部格式，并做优化，做好 渲染 *rendering* 的准备。如果你的模板语法有错误，那么在调用`Template()`时就会抛出`TemplateSyntaxError`异常：
 
@@ -142,22 +141,22 @@ Traceback (most recent call last):
 django.template.TemplateSyntaxError: Invalid block tag: 'notatag'
 ```
 
-这里，“块标签” *block tag* 指向的是`{% notatag %}`，“块标签”与“模板标签”是同义的。
+这里，“块标签”*block tag*指向的是`{% notatag %}`，“块标签”与“模板标签”是同义的。
 
 系统会在下面的情形抛出`TemplateSyntaxError`异常：
 
-- 无效的标签 tags
-- 无效的标签参数 arguments to valid tags
-- 无效的过滤器 filters
-- 无效的过滤器参数 arguments to valid filters
-- 无效的模板语法 template syntax
+- 无效的标签　　　　tags
+- 无效的标签参数　　arguments to valid tags
+- 无效的过滤器　　　filters
+- 无效的过滤器参数　arguments to valid filters
+- 无效的模板语法　　template syntax
 - 未封闭的块标签（针对需要封闭的块标签）
 
 渲染一个模板
 
-一旦你创建一个`Template`对象，你可以用context来传递数据给它。 一个context是一系列变量和它们值的集合。【有一个context小解 可以看看】
+一旦你创建一个`Template`对象，你可以用context来传递数据给它。一个context是一系列变量和它们关联的值。【有一个context小解 可以看看】
 
-上下文 context 在Django里表现为`Context`类，在`django.template`模块里。 它的构造函数带有一个可选的参数：一个字典映射变量和它们的值。 调用`Template`对象的`render()`方法并传递context来填充模板：
+上下文 context 在Django里表现为`Context`类，在`django.template`模块里。它的构造函数带有一个可选的参数：一个字典映射变量和它们的值。调用`Template`对象的`render()`方法并传递context来填充模板：
 
 ```Python
 >>> from django.template import Context, Template
@@ -167,15 +166,15 @@ django.template.TemplateSyntaxError: Invalid block tag: 'notatag'
 u'My name is Stephane.'
 ```
 
-我们必须指出的一点是，`t.render(c)`返回的值是一个`Unicode对象`，不是普通的Python字符串【py3中如何呢？待研究】。 你可以通过字符串前的u来区分。 在整个Django框架中，使用的字符都是Unicode对象而不是普通的字符串。 如果你明白这样做给你带来了多大便利的话，尽可能地感激Django在幕后有条不紊地为你所做这这么多工作吧。 如果不明白你从中获益了什么，别担心。你只需要知道Django对Unicode的支持，将让你的应用程序轻松地处理各式各样的字符集，而不仅仅是基本的A-Z英文字符。
+我们必须指出的一点是，`t.render(c)`返回的值是一个`Unicode对象`，不是普通的Python字符串【py3中如何呢？待研究】。你可以通过字符串前的u来区分。在整个Django框架中，使用的字符都是Unicode对象而不是普通的字符串。如果你明白这样做给你带来了多大便利的话，尽可能地感激Django在幕后有条不紊地为你所做的这么多工作吧。如果不明白你从中获益了什么，别担心。你只需要知道Django对Unicode的支持，将让你的应用程序轻松地处理各式各样的字符集，而不仅仅是基本的A-Z英文字符。
 
-***
+* * *
 字典和Contexts
-***
+* * *
 
 Python的字典数据类型就是关键字和它们值的一个映射。`Context`和字典很类似，不过`Context`还提供更多的功能，请看第九章。
 
-变量名必须由英文字符开始 （A-Z或a-z）并可以包含数字字符、下划线和小数点。 （小数点在这里有特别的用途，稍后我们会讲到）变量是大小写敏感的。
+变量名必须由英文字符开始（A-Z或a-z）并可以包含数字字符、下划线和小数点。（小数点在这里有特别的用途，稍后我们会讲到）变量是大小写敏感的。
 
 下面是编写模板并渲染的例子：
 
@@ -214,12 +213,12 @@ inevitably stop working.</p>\n\n\n<p>Sincerely,<br />Outdoor Equipment
 - 我们把模板的原始文本*raw text*保存到变量`raw_template`中。注意到我们使用了三个引号来标识这些文本，因为这样可以包含多行。
 - 接下来，我们创建了一个模板对象`t`，把`raw_template`作为 `Template`类构造函数的参数。
 - 我们从Python的标准库导入`datetime`模块，以后我们将会使用它。
-- 然后，我们创建一个 Context 对象`c`。 Context构造的参数是Python**字典数据类型**。在这里，我们指定参数`person_name`的值是 `'John Smith'`, 参数`company`的值为`'Outdoor Equipment'`，等等。
-- 最后，我们在模板对象上调用`render()`方法，传递context参数给它。 这是返回渲染后的模板的方法，它会替换模板变量为真实的值和执行块标签。
-- 注意，warranty paragraph显示是因为 ordered_warranty 的值为 True . 注意时间的显示， April 2, 2009 , 它是按 'F j, Y' 格式显示的。
-- 如果你是Python初学者，你可能在想为什么输出里有回车换行的字符('\n' )而不是 显示回车换行？因为这是Python交互解释器的缘故：调用 t.render(c)返回字符串，解释器缺省显示这些字符串的 真实内容呈现 ，而不是打印这个变量的值。 要显示换行而不是 '\n' ，使用 print 语句： print t.render(c) 。
+- 然后，我们创建一个 Context 对象`c`。Context构造的参数是Python**字典数据类型**。在这里，我们指定参数`person_name`的值是`'John Smith'`，参数`company`的值为`'Outdoor Equipment'`，等等。
+- 最后，我们在模板对象上调用`render()`方法，传递context参数给它。这是返回渲染后的模板的方法，它会替换模板变量为真实的值和执行块标签。
+- 注意，`warranty paragraph`显示是因为`ordered_warranty`的值为`True`。注意时间的显示，`April 2, 2009`，它是按`'F j, Y'`格式显示的。
+- 如果你是Python初学者，你可能在想为什么输出里有回车换行的字符（`'\n'`）而不是显示回车换行？因为这是Python交互解释器的缘故：调用`t.render(c)`返回字符串，解释器缺省显示这些字符串的真实内容呈现，而不是打印这个变量的值。要显示换行而不是`'\n'`，使用`print`语句： `print t.render(c)`【注意py3】。
 
-这就是使用Django模板系统的基本规则：写模板，创建`Template`对象，创建`Context`，调用`render()`方法。
+这就是使用Django模板系统的基本规则：写模板，创建`Template`对象，创建`Context`，调用`render()`方法。【总结】
 
 ### 多个上下文，同一个模板 ###
 
@@ -236,7 +235,7 @@ Hello, Julie
 Hello, Pat
 ```
 
-无论何时我们都可以像这样使用同一模板源渲染多个context，只进行**一次**`Template`对象的创建，然后多次调用`render()`方法渲染，这样会更高效：
+无论何时我们都可以像这样使用同一模板源渲染多个context，只进行**一次**`Template`对象的创建，然后多次调用`render()`方法渲染，这样会更高效：【重复创建模板是低效的，所以是bad。其实也是一些代码的原则，能不重复执行的代码都写在循环的外面，提高代码的速度。】
 
 ```Python
 # Bad
@@ -252,13 +251,13 @@ for name in ('John', 'Julie', 'Pat'):
 
 Django的模板解析相当快捷。大部分的解析工作都是在后台通过对简短正则表达式一次性调用来完成。这和基于XML的模板引擎形成鲜明对比，那些引擎承担了XML解析器的开销，且往往比Django模板渲染引擎要慢上几个数量级。【没有jinja2牛逼】
 
-### Context变量的查找 ###
+### 上下文变量的查找 ###
 
-在到目前为止的例子中，我们通过 context 传递的简单参数值主要是字符串，还有一个`datetime.date`例子。 然而，模板系统能够非常简洁地处理更加复杂的数据结构，例如列表*list*、字典*dictionary*和自定义的对象。
+在到目前为止的例子中，我们通过context传递的简单参数值主要是字符串，还有一个`datetime.date`例子。然而，模板系统能够非常简洁地处理更加复杂的数据结构，例如列表*list*、字典*dictionary*和自定义的对象。
 
-在Django模板中遍历复杂数据结构的关键是句点字符 (`.`)。
+在Django模板中遍历复杂数据结构的关键是句点字符（`.`）。
 
-最好是用几个例子来说明一下。比如，假设你要向模板传递一个Python字典。要通过**字典键**访问该字典的值，可使用一个句点：
+最好是用几个例子来说明一下。比如，假设你要向模板传递一个**Python字典**。要通过字典键访问该字典的值，可使用一个句点：【感觉，其实Django只是提供了一个Python脚本和HTML网页的接口，可以让HTML网页里使用Python里的变量（好像只能是字典？待考）】
 
 ```Python
 >>> from django.template import Template, Context
@@ -269,7 +268,7 @@ Django的模板解析相当快捷。大部分的解析工作都是在后台通�
 u'Sally is 43 years old.'
 ```
 
-同样，也可以通过句点来访问对象的属性。比方说， Python的`datetime.date`对象有`year`、`month`和`day`几个属性，你同样可以在模板中使用句点来访问这些属性*attributes*：
+同样，也可以通过句点来访问对象的**属性**。比方说，Python的`datetime.date`对象有`year`、`month`和`day`几个属性，你同样可以在模板中使用句点来访问这些属性*attributes*：
 
 ```Python
 >>> from django.template import Template, Context
@@ -287,7 +286,7 @@ u'Sally is 43 years old.'
 u'The month is 5 and the year is 1993.'
 ```
 
-这个例子使用了一个自定义类*custom class*，演示了通过实例变量加点(dot)来访问它的属性，这个方法适用于任意的对象：
+这个例子使用了一个自定义类*custom class*，演示了通过实例变量加点(dot)来访问它的属性，这个方法适用于任意的对象：【关于下文的新式类Person(object)，py3默认就是新式类了，python要用新式类就得带上object这个参数。新式类在多重继承的时候是广度优先遍历，老式类是深度优先，其他请自行百度。】
 
 ```Python
 >>> from django.template import Template, Context
@@ -300,7 +299,7 @@ u'The month is 5 and the year is 1993.'
 u'Hello, John Smith.'
 ```
 
-点语法也可以用来引用对象的**方法***methods*。 例如，每个Python字符串都有`upper()`和`isdigit()`方法，你在模板中可以使用同样的句点语法来调用它们：
+点语法也可以用来引用对象的**方法**。例如，每个Python字符串都有`upper()`和`isdigit()`方法，你在模板中可以使用同样的句点语法来调用它们：
 
 ```Python
 >>> from django.template import Template, Context
@@ -311,7 +310,7 @@ u'hello -- HELLO -- False'
 u'123 -- 123 -- True'
 ```
 
-注意这里调用方法时**并没有**使用圆括号,而且也无法给该方法传递参数；你只能调用**不需参数**的方法。（我们将在本章稍后部分解释该哲学。）
+注意这里调用方法时**并没有**使用圆括号,而且也无法给该方法传递参数；你只能调用**不需参数**的方法。（我们将在本章稍后部分解释该哲学。）【评论上，很多人说这地方是个大坑！哈哈】
 
 最后，句点也可用于访问列表索引*list indices*，例如：
 
@@ -323,7 +322,7 @@ u'123 -- 123 -- True'
 u'Item 2 is carrots.'
 ```
 
-Django不允许使用负数列表索引。像`{{ items.-1 }}`这样的模板变量将会引发`TemplateSyntaxError`。
+Django不允许使用负数列表索引。像`{{ items.-1 }}`这样的模板变量将会引发`TemplateSyntaxError`。【注意】
 
 * * *
 Python列表类型
@@ -340,7 +339,7 @@ Python列表类型
 
 系统会默认使用第一个实用的查找方式。按短路逻辑`short-circuit logic`。
 
-句点查找可以多级深度嵌套。例如在下面这个例子中 `{{person.name.upper}}`会转换成字典类型查找（`person['name']`)然后是方法调用（`upper()`):
+句点查找可以多级深度嵌套。例如在下面这个例子中`{{person.name.upper}}`会转换成字典类型查找（`person['name']`)然后是方法调用（`upper()`):
 
 ```Python
 >>> from django.template import Template, Context
@@ -355,7 +354,7 @@ u'SALLY is 43 years old.'
 
 方法调用比其他类型的查找略为复杂一点。以下是一些注意事项：
 
-- 在方法查找过程中，如果某方法抛出一个异常，除非该异常有一个`silent_variable_failure`属性并且它的值为`True`，否则的话它将被传播*propagated*。如果异常确实有`silent_variable_failure`属性，那么模板里的指定变量会被置为空字符串*empty string*，比如:
+- 在方法查找过程中，如果某方法抛出一个异常，除非该异常有一个`silent_variable_failure`属性并且它的值为`True`，否则的话将引发*propagated*该异常。如果异常确实有`silent_variable_failure`属性，那么模板里的指定变量会被置为空字符串*empty string*，比如:
 
     ```Python
     >>> t = Template("My name is {{ person.first_name }}.")
@@ -378,13 +377,13 @@ u'SALLY is 43 years old.'
     u'My name is .'
     ```
 
-- 仅在方法无需传入参数时，其调用才有效。 否则，系统将会转移到下一个查找类型（列表索引查找）。
+- 仅在方法无需传入参数时，其调用才有效。否则，系统将会转移到下一个查找类型（列表索引查找）。
 
 - 显然，有些方法是有副作用的，允许模板系统访问它们，在好的情况下可能只是干件蠢事，坏的情况下甚至会引发安全漏洞*security hole*。
 
-    例如，你有一个 `BankAccount` 对象，它有一个 `delete()` 方法。 如果某个模板中包含了像 `{{ account.delete }}`这样的标签，其中`account`又是`BankAccount`的一个实例，请注意在渲染这个模板时，该`account`对象将被删除！
+    例如，你有一个`BankAccount`对象，它有一个`delete()`方法。如果某个模板中包含了像`{{ account.delete }}`这样的标签，其中`account`又是`BankAccount`的一个实例，请注意在渲染这个模板时，该`account`对象将被删除！
 
-    要防止这样的事情发生，必须设置该方法的 `alters_data` 函数属性：
+    要防止这样的事情发生，必须设置该方法的`alters_data`函数属性：
 
     ```Python
     def delete(self):
@@ -392,11 +391,11 @@ u'SALLY is 43 years old.'
     delete.alters_data = True
     ```
 
-    模板系统不会执行任何以该方式进行标记的方法。接上面的例子，如果模板文件里包含了 `{{ account.delete }}` ，对象又具有 `delete()`方法，而且`delete()`有`alters_data=True`这个属性，那么在模板载入时，`delete()`方法将不会被执行。它将静静地错误退出。
+    模板系统不会执行任何以该方式进行标记的方法。接上面的例子，如果模板文件里包含了`{{ account.delete }}`，对象又具有`delete()`方法，而且`delete()`有`alters_data=True`这个属性，那么在模板载入时，`delete()`方法将不会被执行。它将静静地错误退出。
 
 ### Django如何处理无效变量 ###
 
-默认情况下，如果一个变量不存在，模板系统会把它展示为**空字符串**，不做任何事情来表示失败。 例如：
+默认情况下，如果一个变量不存在，模板系统会把它展示为**空字符串**，不做任何事情来表示失败。例如：
 
 ```Python
 >>> from django.template import Template, Context
@@ -411,11 +410,11 @@ u'Your name is .'
 u'Your name is .'
 ```
 
-系统静悄悄地表示失败，而不是抛出一个异常，因为这通常是人为错误造成的。这种情况下，因为变量名有错误的状况或名称，所有的查询都会失败。 现实世界中，对于一个web站点来说，如果仅仅因为一个小的模板语法错误而造成无法访问，这是不能接受的。
+系统静悄悄地表示失败，而不是抛出一个异常，因为这通常是人为错误造成的。这种情况下，因为变量名有错误的状况或名称，所有的查询都会失败。现实世界中，对于一个web站点来说，如果仅仅因为一个小的模板语法错误而造成无法访问，这是不能接受的。
 
-### 与Context对象一同玩耍 ###
+### 与上下文对象一起玩耍 ###
 
-多数时间，你可以通过传递一个完全填充*full populated*的字典给 `Context()` 来初始化 `Context`对象。 但是初始化以后，你也可以使用标准的Python字典句法*syntax*向`Context`对象添加或者删除条目：
+多数时间，你可以通过传递一个完全填充*full populated*的字典给`Context()`来初始化 `Context`对象。但是初始化以后，你也可以使用标准的Python字典句法*syntax*向`Context`对象添加或者删除条目：
 
 ```Python
 >>> from django.template import Context
@@ -440,7 +439,7 @@ KeyError: 'foo'
 
 #### if/else ####
 
-`{% if %}`标签检查一个变量，如果这个变量为真（即，变量存在，非空，不是布尔值假），系统会显示在`{% if %}`和`{% endif %}`之间的任何内容，例如：
+`{% if %}`标签检查一个变量，如果这个变量为真（即，变量存在，非空，不是布尔值假），系统会显示在`{% if %}`和`{% endif %}`之间的任何内容，例如：【抱怨：这个太不能理解了，不能因为逻辑上可能出错就禁止使用啊，这不是因噎废食么】【回答：1.4里面and和or是可以组合使用的，多个and或者多个or连接也是可以的，不过小括号还是不支持】
 
 ```HTML+Django
 {% if today_is_weekend %}
@@ -458,9 +457,9 @@ KeyError: 'foo'
 {% endif %}
 ```
 
-***
+* * *
 Python的“真值”
-***
+* * *
 
 在Python和Django模板系统中，以下这些对象相当于布尔值的False：
 
@@ -499,7 +498,7 @@ Python的“真值”
 {% endif %}
 ```
 
-{% if %}标签不允许在同一个标签中同时使用`and` 和`or`，因为逻辑上可能模糊的。例如，下面的代码是非法的：
+{% if %}标签不允许在同一个标签中同时使用`and`和`or`，因为逻辑上可能模糊的。例如，下面的代码是无效的：
 
 ```HTML+Django
 {% if athlete_list and coach_list or cheerleader_list %}
@@ -515,13 +514,13 @@ Python的“真值”
 {% endif %}
 ```
 
-多次使用同一个逻辑操作符是没有问题的，但是我们不能把不同的操作符组合起来。例如，这是合法的：
+多次使用同一个逻辑操作符是没有问题的，但是我们不能把不同的操作符组合起来。例如，这是合法的：【Django 1.5版本中，此限制已取消，可以混合使用and和or了】
 
 ```HTML+Django
 {% if athlete_list or coach_list or parent_list or teacher_list %}
 ```
 
-Django模板没有`{% elif %}`标签，请使用嵌套的`{% if %}`标签来达成同样的效果：
+Django模板没有`{% elif %}`标签，请使用嵌套的`{% if %}`标签来达成同样的效果：【现在已经有了{% elif %}标签：https://docs.djangoproject.com/en/dev/ref/templates/builtins/ 】
 
 ```HTML+Django
 {% if athlete_list %}
@@ -550,7 +549,7 @@ Django模板没有`{% elif %}`标签，请使用嵌套的`{% if %}`标签来达�
 </ul>
 ```
 
-在标签末尾添加一个`reversed`参数，使得该列表被反向迭代：
+在标签末尾添加一个`reversed`参数，使得该列表被反向迭代：【非常爽的用法，记得常用】
 
 ```HTML+Django
 {% for athlete in athlete_list reversed %}
@@ -593,7 +592,7 @@ Django模板没有`{% elif %}`标签，请使用嵌套的`{% if %}`标签来达�
 {% endfor %}
 ```
 
-Django模板**不支持**退出循环操作。如果我们想退出循环，可以改变正在迭代的变量，让其仅仅包含需要迭代的项目。 同理，Django也不支持continue语句，我们无法让当前迭代操作跳回到循环头部。（请参看本章稍后的**设计哲学和限制**小节，了解一下决定这个设计的背后原因）
+Django模板**不支持**退出循环操作。如果我们想退出循环，可以改变正在迭代的变量，让其仅仅包含需要迭代的项目。同理，Django也不支持continue语句，我们无法让当前迭代操作跳回到循环头部。（请参看本章稍后的**设计哲学和限制**小节，了解一下决定这个设计的背后原因）【无break和continue】
 
 在每个`{% for %}`循环里有一个称为`forloop`的模板变量。这个变量有一些提示循环进度信息的属性：【重要】
 
@@ -609,7 +608,7 @@ Django模板**不支持**退出循环操作。如果我们想退出循环，可�
 
 - `forloop.revcounter`是表示循环中剩余项的整型变量。在循环初次执行时`forloop.revcounter`将被设置为序列中项的总数。最后一次循环执行中，这个变量将被置1。
 
-- `forloop.revcounter0`类似于`forloop.revcounter`，但它以0做为结束索引。 在第一次执行循环时，该变量会被置为序列的项的个数减1。最后一次循环执行中，这个变量将被置`0`。
+- `forloop.revcounter0`类似于`forloop.revcounter`，但它以0做为结束索引。在第一次执行循环时，该变量会被置为序列的项的个数减1。最后一次循环执行中，这个变量将被置`0`。
 
 - `forloop.first`是一个布尔值，如果该迭代是第一次执行，那么它被置为`True`。在下面的特殊案例中这个变量是很有用的：【把第一个设置成active？】
 
@@ -621,7 +620,7 @@ Django模板**不支持**退出循环操作。如果我们想退出循环，可�
     {% endfor %}
     ```
 
-- `forloop.last`是一个布尔值，在最后一次执行循环时被置为True。一个常见用法是在一系列的链接之间放置管道符（|）：【if嵌套在for内部判断这个变量的属性】
+- `forloop.last`是一个布尔值，在最后一次执行循环时被置为True。一个常见用法是在一系列的链接之间放置竖号符（|）：【if嵌套在for内部判断这个变量的属性】
 
     ```HTML+Django
     {% for link in links %}{{ link }}{% if not forloop.last %} | {% endif %}{% endfor %}
@@ -633,14 +632,14 @@ Django模板**不支持**退出循环操作。如果我们想退出循环，可�
     Link1 | Link2 | Link3 | Link4
     ```
 
-    另一个常见的用途是为列表中的每个单词的加上逗号：
+    另一个常见的用途是为列表中的每个单词的中间加上逗号：
 
     ```HTML+Django
     Favorite places:
     {% for p in places %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}
     ```
 
-- `forloop.parentloop`是一个指向当前循环的上一级循环的`forloop`对象的引用（在嵌套循环的情况下）。 例子在此：
+- `forloop.parentloop`是一个指向当前循环的上一级循环的`forloop`对象的引用（在嵌套循环的情况下）。例子如下：
 
     ```HTML+Django
     {% for country in countries %}
@@ -658,13 +657,336 @@ Django模板**不支持**退出循环操作。如果我们想退出循环，可�
 
 `forloop`魔法变量，仅能在循环中使用。在模板解析器碰到`{% endfor %}`标签后，`forloop`就消失了。
 
-***
+* * *
 Context和forloop变量
-***
+* * *
 
 在`{% for %}`块中，已存在的变量会被移除，以避免`forloop`魔法变量被覆盖。Django会把这个变量移动到`forloop.parentloop`中。通常我们不用担心这个问题，但是一旦我们在模板中定义了`forloop`这个变量（当然我们反对这样做），在`{% for %}`块中它会在`forloop.parentloop`被重新命名。
 
 #### ifequal/ifnotequal ####
+
+Django模板系统压根儿就没想过实现一个全功能的编程语言，所以它不允许我们在模板中执行Python的语句（还是那句话，要了解更多请参看理念和限制小节）。但是比较两个变量的值并且显示一些结果实在是个太常见的需求了，所以Django提供了`{% ifequal %}`标签供我们使用。
+
+`{% ifequal %}`标签比较两个值，当他们相等时，显示在`{% ifequal %}`和`{% endifequal %}`标签块之中所有的东西。
+
+下面的例子比较两个模板变量`user`和 `currentuser`：
+
+```HTML+Django
+{% ifequal user currentuser %}
+    <h1>Welcome!</h1>
+{% endifequal %}
+```
+
+参数可以是硬编码的字符串，随便用单引号或者双引号引起来，所以下列代码都是正确的：
+
+```HTML+Django
+{% ifequal section 'sitenews' %}
+    <h1>Site News</h1>
+{% endifequal %}
+
+{% ifequal section "community" %}
+    <h1>Community</h1>
+{% endifequal %}
+```
+
+和`{% if %}`类似，`{% ifequal %}`支持可选的`{% else %}`标签：
+
+```HTML+Django
+{% ifequal section 'sitenews' %}
+    <h1>Site News</h1>
+{% else %}
+    <h1>No News Here</h1>
+{% endifequal %}
+```
+
+只有模板变量，字符串，整数和小数可以作为{% ifequal %}标签的参数。下面是合法参数的例子：【总结：变，字，整，小】
+
+```HTML+Django
+{% ifequal variable 1 %}
+{% ifequal variable 1.23 %}
+{% ifequal variable 'foo' %}
+{% ifequal variable "foo" %}
+```
+
+其他任何类型，例如Python的字典类型、列表类型、布尔类型，不能用在`{% ifequal %}`中。 下面是些**错误**的例子：
+
+```HTML+Django
+{% ifequal variable True %}
+{% ifequal variable [1, 2, 3] %}
+{% ifequal variable {'key': 'value'} %}
+```
+
+如果你需要判断变量是真还是假，请使用`{% if %`}来替代`{% ifequal %}`。
+
+### 注释 ###
+
+就像HTML或者Python，Django模板语言同样提供代码注释。注释使用`{# #}`：
+
+```HTML+Django
+{# This is a comment #}
+```
+
+注释的内容不会在渲染模板时输出。
+
+用这种语法的注释不能跨越多行。这个限制是为了提高模板解析的性能。在下面这个模板中，输出结果和模板本身是完全一样的（也就是说，注释标签并没有被解析为注释）：
+
+```HTML+Django
+This is a {# this is not
+a comment #}
+test.
+```
+
+如果要实现多行注释，可以使用`{% comment %}`模板标签，就像这样：
+
+```HTML+Django
+{% comment %}
+This is a
+multi-line comment.
+{% endcomment %}
+```
+
+### 过滤器 ###
+
+就象本章前面提到的一样，模板过滤器是在变量被显示前修改它的值的一个简单方法。过滤器使用管道符*pipe character*，如下所示：
+
+```HTML+Django
+{{ name|lower }}
+```
+
+显示的内容是变量`{{ name }}`被过滤器`lower`处理后的结果，它功能是转换文本为小写。
+
+过滤管道可以被套接*chained* ，就是说，一个过滤器管道的输出又可以作为下一个管道的输入，如此下去。下面的例子实现查找列表的第一个元素并将其转化为大写：【类似Python方法的一直点下去.a().b().c()】
+
+```HTML+Django
+{{ my_list|first|upper }}
+```
+
+有些过滤器有参数。过滤器的参数跟随冒号之后并且总是以双引号包含。例如：
+
+```HTML+Django
+{{ bio|truncatewords:"30" }}
+```
+
+这将显示变量`bio`的前30个词。
+
+以下几个是最为重要的过滤器的一部分。附录F包含其余的过滤器。【原文也错了，应该是附录E。】
+
+- `addslashes`：添加反斜杠到任何反斜杠、单引号或者双引号前面。这在处理包含JavaScript的文本时是非常有用的。
+
+- `date`：按指定的格式参数将字符串格式化`date`或者`datetime`对象，例子：
+
+    ```HTML+Django
+    {{ pub_date|date:"F j, Y" }}
+    ```
+
+   格式参数的定义在附录F中。
+
+- `length`：返回变量的长度。对于列表，这个参数将返回列表元素的个数。对于字符串，这个参数将返回字符串中字符的个数。你可以对列表或者字符串，或者任何知道怎么测定长度的Python对象使用这个方法（也就是说，有`__len__()`方法的对象）。
+
+## 理念与局限 ##
+
+现在你已经对Django的模板语言有了一定认识了我们将指出一些特意设置的限制，以及为什么要这样做，和它们背后的设计哲学。
+
+相比其他的网络应用的组件*component*，模板的语法*syntax*很具主观性，程序员们有各自不同的想法。其实，光Python自己，就有几十个开源模板语言的实现。每个实现都是因为开发者认为现存的模板语言不够用。（事实上，对一个Python开发者来说，写一个自己的模板语言就象是某种“成人礼”*rite of passage*一样！如果你还没有完成一个自己的模板语言，好好考虑写一个，这是一个非常有趣的锻炼。）【不写个模板，都不好意思说自己用过Python啊】
+
+明白了这个，你也许有兴趣知道事实上Django并不强制要求你必须使用它的模板语言。因为Django虽然被设计成一个全栈*full-stack*的Web框架，它提供了开发者所必需的所有组件，而且在大多数情况下，使用Django模板系统会比其他的Python模板库要更方便一点，但是并不是严格要求你必须使用它。你将在后续的“在视图中使用模板”这一章节中看到，你还可以非常容易地在Django中使用其他的模板语言。
+
+虽然如此，很明显，我们对Django模板语言的工作方式有着强烈的偏爱。这个模板语言来源于World Online的开发经验和Django创造者们集体智慧的结晶。下面是关于它的一些设计哲学理念：【下面讲哲学问题了】
+
+- 业务逻辑*business logic*应该和表现逻辑*presentation logic*分隔开。
+
+    我们将模板系统视为控制表现及表现相关逻辑的工具，仅此而已。模板系统**不应**提供超出此基本目标的功能。
+
+    出于这个原因，在Django模板中是不可能*impossible*直接调用Python代码的。所有的“编程工作”基本上都被局限于模板标签的能力范围。当然，是可能*is possible*写出自定义的模板标签来完成任意工作，但这些“超范围”*out-of-the-box*的Django模板标签有意地不允许执行任何Python代码。【也就是说，模板必须简单，让小白前端也会直接掌握】
+
+- 语法不应受到HTML/XML的束缚*decoupled*。
+
+    尽管Django模板系统主要用于生成 HTML，它还也被有意地*intended*设计为可生成非HTML格式，如纯文本*plain text*。一些其它的模板语言是基于XML的，将所有的模板逻辑*template logic*置于XML标签与属性之中，而Django有意地避开了这种限制。强制要求使用有效XML编写模板将会引发大量的人为错误和难以理解的错误信息，而且使用XML引擎解析模板也会导致令人无法容忍的模板处理开销。
+
+- 假定设计师熟悉HTML编码。【就是会用编辑器手写HTML】
+
+    模板系统的设计意图并不是为了让模板一定能够很好地显示在Dreamweaver这样的所见即所得编辑器*WYSIWYG editors*中。这种限制过于苛刻，而且会使得语法不能像目前这样友好*friendly*。Django要求模板创作人员对直接编辑HTML非常熟悉。【要认真学习】
+
+- 假定设计师不是Python程序员。
+
+    模板系统开发人员认为，模板通常由设计师而非程序员来编写，因此不应被假定拥有Python开发知识。
+
+    当然，系统同样也特意地提供了对那些由Python程序员进行模板制作的小型团队的支持。它提供了一种工作模式，允许通过编写原生Python代码进行系统语法拓展。（详见第10章）
+
+- 目标并不是要发明一种编程语言。
+
+    目标是能够足够地提供编程一般的功能，比如实现分支、循环，这是进行与表现相关判断的基础。
+
+## 在视图中使用模板 ##
+
+在学习了模板系统的基础之后，现在让我们使用相关知识来创建视图。重新打开我们在前一章在`mysite.views`中创建的`current_datetime`视图。以下是其内容：【原始的，没有用模板的】
+
+```Python
+from django.http import HttpResponse
+import datetime
+
+def current_datetime(request):
+    now = datetime.datetime.now()
+    html = "<html><body>It is now %s.</body></html>" % now
+    return HttpResponse(html)
+```
+
+让我们用Django模板系统来修改该视图。第一步，你可能已经想到了要做下面这样的修改：【真好，真是循序渐进，大师手笔】
+
+```Python
+from django.template import Template, Context
+from django.http import HttpResponse
+import datetime
+
+def current_datetime(request):
+    now = datetime.datetime.now()
+    t = Template("<html><body>It is now {{ current_date }}.</body></html>")
+    html = t.render(Context({'current_date': now}))
+    return HttpResponse(html)
+```
+
+没错，它确实使用了模板系统，但是并没有解决我们在本章开头所指出的问题。也就是说，模板仍然嵌入在Python代码里，并未真正的实现数据与表现的分离。让我们将模板置于一个**单独的文件**之中，并且让视图加载该文件来解决此问题。
+
+你可能首先考虑把模板保存在文件系统的某个位置并用Python内建的文件操作函数来读取文件内容。假设文件保存在`/home/djangouser/templates/mytemplate.html`中的话，代码就会像下面这样：
+
+```Python
+from django.template import Template, Context
+from django.http import HttpResponse
+import datetime
+
+def current_datetime(request):
+    now = datetime.datetime.now()
+    # Simple way of using templates from the filesystem.
+    # This is BAD because it doesn't account for missing files!
+    fp = open('/home/djangouser/templates/mytemplate.html')
+    t = Template(fp.read())
+    fp.close()
+    html = t.render(Context({'current_date': now}))
+    return HttpResponse(html)
+```
+
+然而，基于以下几个原因，该方法还算不上优雅：
+
+- 它没有对文件丢失的情况做出处理。如果文件`mytemplate.html`不存在或者不可读，`open()`函数调用将会抛出`IOError`异常。
+
+- 这里对模板路径*template location*进行了硬编码。如果你在每个视图函数都用该技术，就要不断复制这些模板的位置。更不用说还要带来大量的输入工作！
+
+- 它包含了大量令人生厌的重复代码。与其在每次加载模板时都调用`open()`、`fp.read()`和`fp.close()`，还不如做出更佳选择。【Django Way】
+
+为了解决这些问题，我们将使用模板加载*template loading*和模板目录*template directories*的技术。
+
+### 模板加载 ###
+
+为了减少模板加载调用过程和模板本身的冗余代码，Django提供了一种使用方便且功能强大的API，用于从文件系统中加载模板。
+
+要使用此模板加载API，首先你必须将模板的保存位置告诉框架。设置的保存文件就是我们前一章节讲述`ROOT_URLCONF`配置的时候提到的`settings.py`。
+
+如果你是一步步跟随我们学习过来的，马上打开你的`settings.py`配置文件，找到`TEMPLATE_DIRS`这项设置吧。它的默认设置是一个空元组（`tuple`），加上一些自动生成的注释：
+
+```Python
+TEMPLATE_DIRS = (
+    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
+    # Always use forward slashes, even on Windows.
+    # Don't forget to use absolute paths, not relative paths.
+)
+```
+
+该设置告诉Django的模板加载机制在哪里查找模板。选择一个目录用于存放模板并将其添加到`TEMPLATE_DIRS`中，如：【1.6版本已经不需要这么做了。不需要寻找模板路径。已经默认。】【Django 1.6。默认到**app列表**制定的目录查找templates目录，在该目录中，找到第一个与视图函数中些的目标模板，找到后渲染页面。所以关键在于，需要将你的app，添加到app列表中。那么如何添加？settings.py文件中：INSTALLED_APPS项目，大概在35行。】
+
+```Python
+TEMPLATE_DIRS = (
+    '/home/django/mysite/templates',
+)
+```
+
+下面是一些注意事项：
+
+- 你可以任意指定想要的目录，只要运行Web服务器的用户可以读取该目录的子目录和模板文件。如果实在想不出合适的位置来放置模板，我们建议在Django项目中创建一个`templates`目录（也就是说，如果你一直都按本书的范例操作的话，在第二章创建的`mysite`目录中）。【原先使用这种技术：`os.path.join(BASE_DIR, 'templates')`】
+
+- 如果你的`TEMPLATE_DIRS`只包含一个目录，别忘了在该目录后加上个逗号。【因为是个元组】
+
+    错：
+
+    ```Python
+    # Missing comma!
+    TEMPLATE_DIRS = (
+        '/home/django/mysite/templates'
+    )
+    ```
+
+    对：
+
+    ```Python
+    # Comma correctly in place.
+    TEMPLATE_DIRS = (
+        '/home/django/mysite/templates',
+    )
+    ```
+
+    原因是Python要求单元素元组中必须使用逗号，以此消除与圆括号表达式之间的歧义。这是新手常犯的错误。
+
+- 如果使用的是Windows平台，请包含驱动器符号并使用Unix风格的斜杠（`/`）而不是反斜杠（`\`）,就像下面这样：
+
+    ```Python
+    TEMPLATE_DIRS = (
+        'C:/www/django/templates',
+    )
+    ```
+
+- 最省事的方式是使用绝对路径（即从文件系统根目录开始的目录路径）。如果想要更灵活一点并减少一些负面干扰，可利用Django配置文件本身也是Python代码这一点来动态构建`TEMPLATE_DIRS`的内容，如：
+
+    ```Python
+    import os.path
+    
+    TEMPLATE_DIRS = (
+        os.path.join(os.path.dirname(__file__), 'templates').replace('\\','/'),
+    )
+    ```
+
+    这个例子使用了Python内部的魔法变量`__file__`，该变量被自动设置为代码所在的Python模块文件名。`os.path.dirname(__file__)`将会获取自身所在的文件，即`settings.py`所在的目录，然后由`os.path.join`这个方法将这目录与`templates`进行连接。如果在windows下，它会智能地选择正确的反斜杠进行连接，而不是Unix风格的正斜杠。【Linux下形成如`mysite/templates`；Windows下形成如`mysite\templates`】
+
+    在这里我们面对的是动态语言python代码，我需要提醒你的是，不要在你的设置文件里写入错误的代码，这很重要。如果你在这里引入了语法错误，或运行错误，你的Django-powered站点将很可能会崩溃掉。
+
+完成`TEMPLATE_DIRS`设置后，下一步就是修改视图代码，让它使用Django模板加载功能而不是对模板路径硬编码。返回`current_datetime`视图，进行如下修改：
+
+```Python
+from django.template.loader import get_template
+from django.template import Context
+from django.http import HttpResponse
+import datetime
+
+def current_datetime(request):
+    now = datetime.datetime.now()
+    t = get_template('current_datetime.html')
+    html = t.render(Context({'current_date': now}))
+    return HttpResponse(html)
+```
+
+本例，我们使用了`django.template.loader.get_template()`函数，而不是手动从文件系统加载模板。这个 `get_template()`函数以模板名称为参数，在文件系统中找出模板的存放位置，打开文件并返回一个编译好的Template对象。
+
+在这个例子里，我们选择的模板文件是`current_datetime.html`，但这个与`.html`后缀没有特别的联系。你可以选择任意后缀的任意文件，只要是符合逻辑的都行。甚至选择没有后缀的文件也不会有问题。
+
+要确定某个模板文件在你的系统里的位置，`get_template()`方法会自动为你连接已经设置的`TEMPLATE_DIRS`目录和你传入该方法的模板名称参数。比如，你的`TEMPLATE_DIRS`目录设置为`'/home/django/mysite/templates'`，上面的`get_template()`调用就会为你找到`/home/django/mysite/templates/current_datetime.html`这样一个位置。
+
+如果`get_template()`找不到给定名称的模板，将会引发一个`TemplateDoesNotExist`异常。要了解究竟会发生什么，让我们按照第三章内容，在Django项目目录中运行`python manage.py runserver`命令，再次启动Django开发服务器。接着，告诉你的浏览器，使其定位到指定页面以激活`current_datetime`视图（如 http://127.0.0.1:8000/time/ ）。假设你的`DEBUG`项设置为`True`，而你又没有建立`current_datetime.html`这个模板文件，你会看到Django的错误提示网页，告诉你发生了`TemplateDoesNotExist`错误。
+
+![image](http://www.djangobook.com/en/2.0/_images/missing_template.png)
+
+图4-1：模板文件无法找到时，将会发送提示错误的网页给用户。
+
+该页面与我们在第三章解释过的错误页面相似，只不过多了一块调试信息区：模板加载器事后检查区。该区域显示Django要加载哪个模板、每次尝试出错的原因（如：文件不存在等）。当你尝试调试模板加载错误时，这些信息会非常有帮助。【Django 1.7中添加一句“TEMPLATE_DIRS=[os.path.join(BASE_DIR,'template'),]”就可以正常加载模板了，记住templates文件夹与manage.py同级】
+
+接下来，在模板目录中创建包括以下模板代码`current_datetime.html`文件：
+
+```HTML+Django
+<html><body>It is now {{ current_date }}.</body></html>
+```
+
+在浏览器中刷新该页，你将会看到完整解析后的页面。
+
+### render_to_response() ###
+
+
 
 
 
