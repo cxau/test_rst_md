@@ -986,11 +986,323 @@ def current_datetime(request):
 
 ### render_to_response() ###
 
+我们已经告诉你如何载入一个模板文件，然后用`Context`渲染它，最后返回这个处理好的`HttpResponse`对象给用户。我们已经优化了方案，使用`get_template()`方法代替繁杂的用代码来处理模板及其路径的工作。但这仍然需要一定量的时间来敲出这些简化的代码。这是一个普遍存在的重复苦力劳动。Django为此提供了一个捷径，让你一次性地载入某个模板文件，渲染它，然后将此作为`HttpResponse`返回。
+
+该捷径就是位于`django.shortcuts`模块中名为`render_to_response()`的函数。**大多数情况下**，你会使用`render_to_response()`而不是手动加载模板并创建`Context`和`HttpResponse`对象，除非你的老板以代码行数来衡量你的工作。
+
+下面就是使用`render_to_response()`重新编写过的`current_datetime`范例：【貌似还有一个render方法实现同样的功能。(django:1.6.5)|用render，这个过时了，render大法好】
+
+```Python
+from django.shortcuts import render_to_response
+import datetime
+
+def current_datetime(request):
+    now = datetime.datetime.now()
+    return render_to_response('current_datetime.html', {'current_date': now})
+```
+
+大变样了！让我们逐句看看代码发生的变化：【简化，封装，神奇！】
+
+- 我们不再需要导入`get_template`、`Template`、`Context`和`HttpResponse`。相反，我们导入`django.shortcuts.render_to_response`。`import datetime`继续保留。
+
+- 在`current_datetime`函数中，我们仍然进行`now`计算，但模板加载、上下文创建、模板解析和`HttpResponse`创建工作均在对`render_to_response()`的调用中完成了。由于`render_to_response()`返回`HttpResponse`对象，因此我们仅需在视图中`return`该值。
+
+`render_to_response()`的第一个参数必须是要使用的模板名称。如果要给定第二个参数，那么该参数必须是为该模板创建`Context`时所使用的字典。如果不提供第二个参数，`render_to_response()`会使用一个空的字典。
+
+* * *
+### 更新：render()大法 ###
+
+自Django 1.3出现`render()`方法，它是`render_to_response()`的一个崭新的快捷方式，前者会自动使用`RequestContext`，自动加载Context处理器。而后者必须coding出来，这是最明显的区别，当然前者更简洁。
+
+```Python
+from django.shortcuts import render
+import datetime
+
+def current_datetime(request):
+    now = datetime.datetime.now()
+    return render(request, 'current_datetime.html', {'current_date': now})
+```
+* * *
+
+### locals()技巧 新版已去除本段 ###
+
+思考一下我们对`current_datetime`的最后一次赋值：
+
+```Python
+def current_datetime(request):
+    now = datetime.datetime.now()
+    return render_to_response('current_datetime.html', {'current_date': now})
+```
+
+很多时候，就像在这个例子中那样，你发现自己一直在计算某个变量，保存结果到变量中（比如前面代码中的now），然后将这些变量发送给模板。尤其喜欢偷懒的程序员应该注意到了，不断地为临时变量和临时模板命名有那么一点点多余。不仅多余，而且需要额外的输入。
+
+如果你是个喜欢偷懒的程序员并想让代码看起来更加简明，可以利用Python的内建函数`locals()`。它返回的字典对所有局部变量的名称与值进行映射。因此，前面的视图可以重写成下面这个样子：【英文版更新至Django 1.4 没有介绍locals，可能算是奇技淫巧了。】
+
+* * *
+笔记
+locals()可以直接将函数中所有的变量及值全部传到指定url。当然这可能会传递一些多余的参数，有点浪费内存的嫌疑。
+
+```Python
+return render(request, 'blog_add.html',locals())
+```
+
+那么长一段代码精简到三分之一的长度。有种爽歪歪的感觉！
+* * *
 
 
+```Python
+def current_datetime(request):
+    current_date = datetime.datetime.now()
+    return render_to_response('current_datetime.html', locals())
+```
 
+在此，我们没有像之前那样手工指定context字典，而是传入了`locals()`的值，它囊括了函数执行到该时间点时所定义的一切变量。因此，我们将`now`变量重命名为`current_date`，因为那才是模板所预期的变量名称。在本例中，`locals()`并没有带来多大的改进，但是如果有多个模板变量要界定而你又想偷懒，这种技术可以减少一些键盘输入。【学会一招】
 
+使用`locals()`时要注意是它将包括**所有的**局部变量，它们可能比你想让模板访问的要多。在前例中，`locals()`还包含了`request`。对此如何取舍取决你的应用程序。
 
+### get_template()中使用子目录 ###
 
+把所有的模板都存放在一个目录下可能会让事情变得难以掌控。你可能会考虑把模板存放在你模板目录的子目录中，这非常好。事实上，我们推荐这样做；一些Django的高级特性（例如将在第11章讲到的通用视图系统）的缺省约定就是期望使用这种模板布局。
 
+把模板存放于模板目录的子目录中是件很轻松的事情。只需在调用`get_template()`时，把子目录名和一条斜杠添加到模板名称之前，如：
 
+```Python
+t = get_template('dateapp/current_datetime.html')
+```
+
+由于`render()`是对`get_template()`的小型封装，你可以对`render()`的第一个参数做相同处理。
+
+```Python
+return render(request, 'dateapp/current_datetime.html', {'current_date': now})
+```
+
+对子目录树的深度没有限制，你想要多少层都可以。只要你喜欢，用多少层的子目录都无所谓。
+
+* * *
+注意：
+Windows用户必须使用斜杠而不是反斜杠。`get_template()`假定的是Unix风格的文件名符号约定。【经测试，Win+Py27环境，斜杠，反斜杠都可以】
+* * *
+
+### 模板标签 `include` ###
+
+在讲解了模板加载机制之后，我们再介绍一个利用该机制的内建模板标签：`{% include %}`。该标签允许在（模板中）包含其它的模板的内容。标签的参数是所要包含的模板名称，可以是一个变量，也可以是用单/双引号硬编码的字符串。每当在多个模板中出现相同的代码时，就应该考虑是否要使用`{% include %}`来减少重复。【关注，注意和模板继承的区别】
+
+下面这两个例子都包含了`nav.html`模板。这两个例子是等价的，它们证明单/双引号都是允许的：
+
+```HTML+Django
+{% include 'nav.html' %}
+{% include "nav.html" %}
+```
+
+下面的例子包含了`includes/nav.html`模板的内容：
+
+```HTML+Django
+{% include 'includes/nav.html' %}
+```
+
+下面的例子包含了以变量`template_name`的值为名称的模板内容：
+
+```HTML+Django
+{% include template_name %}
+```
+
+和在`get_template()`中一样，对模板的文件名进行判断时会在所调取的模板名称之前加上来自`TEMPLATE_DIRS`的模板目录。
+
+所包含的模板执行时的context和包含它们的模板是一样的。举例说，考虑下面两个模板文件：
+
+```HTML+Django
+# mypage.html
+
+<html>
+<body>
+{% include "includes/nav.html" %}
+<h1>{{ title }}</h1>
+</body>
+</html>
+
+# includes/nav.html
+
+<div id="nav">
+    You are in: {{ current_section }}
+</div>
+```
+
+如果你用一个包含`current_section`的上下文去渲染`mypage.html`这个模板文件，这个变量将存在于它所“包含”的模板里，如同你期望的那样。【这个include不太懂】【继承和include区别用一句话概括就是，继承解决不同页面的重复内容，include解决同一页面内相同内容，相对来说include的使用其实比较少】
+
+如果`{% include %}`标签指定的模板没能找到，Django将会在下面两个处理方法中选择一个：
+
+- 如果`DEBUG`设置为`True`，你将会在`Django`错误信息页面看到`TemplateDoesNotExist`异常。
+
+- 如果`DEBUG`设置为`False`，该标签不会引发错误信息，在标签位置不显示任何东西。
+
+## 模板继承 ##
+
+到目前为止，我们的模板范例都只是些零星的HTML片段，但在实际应用中，你将用Django模板系统来创建整个HTML页面。这就带来一个常见的Web开发问题：在整个网站中，如何减少共用页面区域（比如站点导航）所引起的重复和冗余代码？
+
+解决该问题的传统做法是使用服务器端引用（*server-side includes*），你可以在HTML页面中使用该指令将一个网页嵌入到另一个中。事实上，Django通过刚才讲述的{% include %}支持了这种方法。 但是用Django解决此类问题的首选方法是使用更加优雅的策略——模板继承*template inheritance*。
+
+本质上来说，模板继承就是先构造一个基础框架模板*skeleton*，而后在其子模板中对它所包含站点公用部分和定义区块*blocks*进行重载*override*。
+
+修改`current_datetime.html`文件，为`current_datetime`创建一个更加完整的模板，我们通过上述操作体会一下这种做法：
+
+```HTML+Django
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html lang="en">
+<head>
+    <title>The current time</title>
+</head>
+<body>
+    <h1>My helpful timestamp site</h1>
+    <p>It is now {{ current_date }}.</p>
+
+    <hr>
+    <p>Thanks for visiting my site.</p>
+</body>
+</html>
+```
+
+这看起来不错，但如果我们要为第3章的`hours_ahead`视图创建另一个模板会发生什么事情呢？我们可能会这样：
+
+```HTML+Django
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html lang="en">
+<head>
+    <title>Future time</title>
+</head>
+<body>
+    <h1>My helpful timestamp site</h1>
+    <p>In {{ hour_offset }} hour(s), it will be {{ next_time }}.</p>
+
+    <hr>
+    <p>Thanks for visiting my site.</p>
+</body>
+</html>
+```
+
+很明显，我们刚才重复了大量的HTML代码。想象一下，如果有一个更典型的网站，它有导航条、样式表，可能还有一些JavaScript代码，事情必将以向每个模板填充各种冗余的HTML而告终。
+
+解决这个问题的服务器端include方案是找出两个模板中的共同部分，将其保存为不同的模板片段，然后在每个模板中进行include。也许你会把模板头部的一些代码保存为`header.html`文件：
+
+```HTML+Django
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html lang="en">
+<head>
+```
+
+你可能会把底部保存到文件footer.html：
+
+```HTML+Django
+    <hr>
+    <p>Thanks for visiting my site.</p>
+</body>
+</html>
+```
+
+对基于include的策略，头部和底部的包含很简单。麻烦的是中间部分。在此范例中，每个页面都有一个`<h1>My helpful timestamp site</h1>`标题，但是这个标题不能放在`header.html`中，因为每个页面的`<title>`是不同的。如果我们将`<h1>`包含在头部，我们就不得不包含`<title>`，但这样又不允许在每个页面对它进行定制。何去何从呢？
+
+Django的模板继承系统解决了这些问题。你可以将其视为服务器端include的逆向思维*inside-out*版本。你可以对那些不同*different*的代码段进行定义，而不是共同*common*代码段。
+
+第一步是定义基础模板*base template*，该框架之后将由子模板*child templates*所继承。以下是我们目前所讲述范例的基础模板：
+
+```HTML+Django
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html lang="en">
+<head>
+    <title>{% block title %}{% endblock %}</title>
+</head>
+<body>
+    <h1>My helpful timestamp site</h1>
+    {% block content %}{% endblock %}
+    {% block footer %}
+    <hr>
+    <p>Thanks for visiting my site.</p>
+    {% endblock %}
+</body>
+</html>
+```
+
+这个叫做`base.html`的模板定义了一个简单的HTML框架文档，我们将在本站点的所有页面中使用。子模板的作用就是重载、添加或保留那些块的内容。（如果你一直按顺序学习到这里，保存这个文件到你的`templates`目录下，命名为`base.html`。）
+
+我们使用了一个以前未见到过的模板标签：`{% block %}`。所有的`{% block %}`标签告诉模板引擎，子模板可以重载这些部分。每个`{% block %}`标签所要做的是告诉模板引擎，该模板下的这一块内容将有可能被子模板覆盖。
+
+现在我们已经有了一个基本模板，我们可以通过修改`current_datetime.html`模板来使用它：
+
+```HTML+Django
+{% extends "base.html" %}
+
+{% block title %}The current time{% endblock %}
+
+{% block content %}
+<p>It is now {{ current_date }}.</p>
+{% endblock %}
+```
+
+接着，我们再为第3章的那个`hours_ahead`视图创建一个模板。（如果你一直按顺序学习到这里，你可以自己决定把`hours_ahead`视图中的硬编码HTML方法改成现在所学的模板系统。）代码如下：【这里一定要注意，如果模板文件使用utf8编码的话，一定要定义为无BOM的utf8，否则会出现样式混乱的问题。】
+
+```HTML+Django
+{% extends "base.html" %}
+
+{% block title %}Future time{% endblock %}
+
+{% block content %}
+<p>In {{ hour_offset }} hour(s), it will be {{ next_time }}.</p>
+{% endblock %}
+```
+
+看起来很漂亮是不是？每个模板只包含对自己而言独一无二*unique*的代码。无需多余的部分。如果想进行站点级的设计修改，仅需修改`base.html`，所有其它模板会立即反映出所作修改。
+
+下面讲讲它是怎样工作的。在加载`current_datetime.html`模板时，模板引擎发现了`{% extends %}`标签，注意到该模板是一个子模板。模板引擎立即装载其父模板，即本例中的`base.html`。
+
+此时，模板引擎注意到base.html中的三个`{% block %}`标签，并用子模板的内容替换这些`block`。因此，引擎将会使用我们在`{ block title %}`中定义的标题，对`{% block content %}`也是如此。所以，网页标题一块将由`{% block title %}`替换，同样地，网页的内容一块将由`{% block content %}`替换。
+
+注意由于子模板并没有定义`footer`块，模板系统将使用在父模板中定义的值。父模板`{% block %}`标签中的内容总是被当作一条退路*fallback*。
+
+继承并不会影响到模板的上下文。换句话说，任何处在继承树上的模板都可以访问到你传到模板中的每一个模板变量。【重要】
+
+你可以根据需要使用任意多的继承次数。使用继承的一种常见方式是下面的三层法*three-level approach*：
+
+1. 创建`base.html`模板，在其中定义站点的主要外观感受。这些都是不常修改甚至从不修改的部分。
+
+2. 为网站的每个区域创建`base_SECTION.html`模板（例如，`base_photos.html`和`base_forum.html`）。这些模板对`base.html`进行拓展，并包含区域特定的风格与设计。
+
+3. 为每种类型的页面创建独立的模板，例如论坛页面或者图片库。这些模板拓展相应的区域模板。
+
+这个方法可最大限度地重用代码，并使得向公共区域*shared areas*（如区域级的导航）添加内容成为一件轻松的工作。
+
+以下是使用模板继承的一些指南：【认真阅读，经验之谈】
+
+- 如果在模板中使用`{% extends %}`，必须保证其为模板中的第一个模板标记。否则，模板继承将不起作用。
+
+- 一般来说，基础模板中的`{% block %}`标签越多越好。记住，子模板**不必**定义父模板中所有的代码块，因此你可以用合理的缺省值对一些代码块进行填充，然后只对子模板所需的代码块进行（重）定义。俗话说，钩子越多越好*It’s better to have more hooks than fewer hooks*。【主模板基本很少改动，如果事先不标记好BLOCK，后期想要额外增加新元素将十分困难。】
+
+- 如果发觉自己在多个模板之间拷贝代码，你应该考虑将该代码段放置到父模板的某个`{% block %}`中。
+
+- 如果你需要访问父模板中的块的内容，使用`{{ block.super }}`这个标签吧，这一个魔法变量将会表现出父模板中的内容。如果只想在上级代码块基础上添加内容，而不是全部重载，该变量就显得非常有用了。
+
+    【明白{{ block super }}的用法了。引入对应block后，在其前后，都可以增加相应的内容。如下：】
+
+    ```HTML+Django
+    {% block footer %}
+    
+    <b>This is the begin of footer.</b>
+    
+    {{ block.super }}<br/>
+    
+    <b>This is the end of footer.</b>
+    
+    {% endblock %} 
+    ```
+
+- 不允许在同一个模板中定义多个同名的`{% block %}`。存在这样的限制是因为block标签的工作方式是双向的。也就是说，block标签不仅挖了一个要填的坑，也定义了在父模板中这个坑所填充的内容。如果模板中出现了两个相同名称的`{% block %}`标签，父模板将无从得知要使用哪个块的内容。
+
+- `{% extends %}`对所传入模板名称使用的加载方法和`get_template()`相同。也就是说，需要将模板名称目录添加到`TEMPLATE_DIRS`设置之后。
+
+- 多数情况下，`{% extends %}`的参数应该是字符串，但是如果直到运行时*runtime*方能确定父模板名，这个参数也可以是个变量。这使得你能够实现一些很酷的动态功能。
+
+## 下一章 ##
+
+你现在已经掌握了Django模板系统的基本知识。接下来呢？
+
+时下大多数网站都是数据库驱动型*database-driven*的：网站的内容都是存储在关系型数据库*relational database*之中。这使得数据*data*和逻辑*logic*能够彻底地分开（视图和模板也以同样方式对逻辑和显示进行了分隔。）
+
+下一章，第5章，将讲述如何与数据库打交道。
